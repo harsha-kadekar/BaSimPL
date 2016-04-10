@@ -11,9 +11,7 @@ import BaSimPL_Parser as parser
 class Compiler(object):
     def __init__(self, text_of_program):
         self._text = text_of_program
-        self._position_of_token = -1
         self._List_Of_Tokens = []
-        self._current_token = None
 
     @property
     def Text_of_Program(self):
@@ -29,12 +27,5 @@ class Compiler(object):
         self._List_Of_Tokens = lexAnalysis.List_Of_Generated_Tokens
         self._position_of_token = 0
 
-    def get_next_token(self):
-        token = Lex.Token(Lex.Defined_Token_Types.EOF, None)
-        if self._position_of_token < self._List_Of_Tokens.__len__():
-            token = self._List_Of_Tokens[self._position_of_token]
-            self._position_of_token += 1
-        # self._current_token = token
-        return token
 
 

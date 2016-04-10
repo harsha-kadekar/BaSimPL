@@ -13,6 +13,13 @@ def Lexxer_Tester(text_of_program):
     for tok in lexAnalysis.List_Of_Generated_Tokens:
         print tok
 
+def Parser_Tester(text_of_program):
+    parser = par.Parser()
+    lexAnalysis = Lex.Lexxer(text_of_program)
+    lexAnalysis.generate_Tokens()
+    parser.List_Of_Tokens = lexAnalysis.List_Of_Generated_Tokens
+    parser.ParseIt()
+
 
 if __name__=='__main__':
     filename = 'Input.txt'
@@ -20,3 +27,5 @@ if __name__=='__main__':
     characters = file.read()
     file.close()
     Lexxer_Tester(characters)
+    # text = '( n / 2 ) * 345 + 34 - ( 4 + 5 ) * 123'
+    Parser_Tester(characters)

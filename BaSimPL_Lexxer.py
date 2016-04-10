@@ -21,6 +21,14 @@ class Token(object):
     def __repr__(self):
         return self.__str__()
 
+    @property
+    def Type_Of_Token(self):
+        return self._type
+
+    @property
+    def Value_Of_Token(self):
+        return self._value
+
 
 # Name: Defined_Token_Types
 # Description: This class holds the different class or types of Tokens BaSimPL can have
