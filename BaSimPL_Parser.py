@@ -18,7 +18,11 @@ import BaSimPL_Lexxer as Lex
 # assignmentSTATEMENT -> ID ASSIGNT_OPERATOR expression SEMI_COLON
 # ifSTATEMENT -> IF OPEN_BRACE expression CLOSE_BRACE SEG_OPEN SEQSTATEMENTS SEG_CLOSE {ELSE SEG_OPEN SEQSTATEMENTS SEG_CLOSE}
 # whileSTATEMENT -> WHILE OPEN_BRACE expression CLOSE_BRACE SEG_OPEN SEQSTATEMENTS SEG_CLOSE
-# expression -> relation {AND_OPR relation} | {OR_OPR relation}
+# Expression -> bterm [ OR_OPR bterm]*
+# bterm -> notfactor [AND_OPR notfactor]*
+# notfactor -> [NOT] bfactor
+# bfactor -> INT | ID | relation
+# -----------> not used --------------------expression -> relation {AND_OPR relation} | {OR_OPR relation}
 # relation -> simpleExpression { relationalOperator simpleExpression}
 # simpleExpression -> term { ADDSUB_OPERATOR term}
 # term -> factor { MULDIV_OPERATOR factor}
@@ -180,8 +184,8 @@ class Parser(object):
     def IfStatement(self):
         self._current_token = self.get_next_token()
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
-            endIflabel = self.generate_labels('ELSE', 1)
-            endElselable = self.generate_labels('IF', 0)
+            endIflabel = self.generate_labels('IF', 0)
+            endElselable = endIflabel
             self._current_token = self.get_next_token()
             self.Expression()
             print 'BEQ '+endIflabel
@@ -192,11 +196,22 @@ class Parser(object):
                     while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
                         self.Statements()
                     self._current_token = self.get_next_token()
-                    print endIflabel + ':'
 
-                    # if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.ELSE:
+                    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.ELSE:
+                        self._current_token = self.get_next_token()
+                        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
+                            endElselable = self.generate_labels('ELSE', 0)
+                            print 'JMP ' + endIflabel
+                            print endIflabel + ':'
+                            self._current_token = self.get_next_token()
+                            while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
+                                self.Statements()
+                            self._current_token = self.get_next_token()
+                        else:
+                            errorMsg = 'Expected }'
+                            self.Error(errorMsg)
 
-
+                    print endElselable + ':'
                 else:
                     errorMsg = 'Expected {'
                     self.Error(errorMsg)
@@ -210,14 +225,85 @@ class Parser(object):
         return
 
     def WhileStatement(self):
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
+            endWhileLabel = self.generate_labels('WHILE', 0)
+            startWhileLabel = self.generate_labels('WHILE', 1)
+            self._current_token = self.get_next_token()
+            print startWhileLabel + ':'
+            self.Expression()
+            print 'BEQ ' + endWhileLabel
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
+                self._current_token = self.get_next_token()
+                if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
+                    self._current_token = self.get_next_token()
+                    while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
+                        self.Statements()
+                    self._current_token = self.get_next_token()
+                    print 'JMP ' + startWhileLabel
+                    print endWhileLabel + ':'
+                else:
+                    errorMsg = 'Expected {'
+                    self.Error(errorMsg)
+            else:
+                errorMsg = 'Expected )'
+                self.Error(errorMsg)
+        else:
+            errorMsg = 'Expected ('
+            self.Error(errorMsg)
         return
 
     def Expression(self):
-        self.Relation()
+        self.BTerm()
+        while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.LOG_OR_OPERATOR:
+            self._current_token = self.get_next_token()
+            self.BTerm()
+            print 'POP D1'
+            print 'POP D0'
+            print 'OR D0, D1'
+            print 'PUSH D0'
+
         return
 
     def Relation(self):
         self.SimpleExpression()
+        while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.GREATEREQUAL_OPERATOR or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.GREATERTHAN_OPERATOR or \
+            self._current_token.Type_Of_Token == Lex.Defined_Token_Types.LESSERTHAN_OPERATOR or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.LESSEREQUAL_OPERATOR or \
+            self._current_token.Type_Of_Token == Lex.Defined_Token_Types.EQUALS_OPERATOR or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.NOTEQUAL_OPERATOR:
+            relop = self._current_token.Type_Of_Token
+            self.SimpleExpression()
+            if relop == Lex.Defined_Token_Types.NOTEQUAL_OPERATOR:
+                x = 0
+            elif relop == Lex.Defined_Token_Types.EQUALS_OPERATOR:
+                x = 1
+            elif relop == Lex.Defined_Token_Types.GREATERTHAN_OPERATOR:
+                x = 2
+            elif relop == Lex.Defined_Token_Types.GREATEREQUAL_OPERATOR:
+                x = 3
+            elif relop == Lex.Defined_Token_Types.LESSEREQUAL_OPERATOR:
+                x = 4
+            else:
+                x = 5
+        return
+
+    def BTerm(self):
+        self.NotFactor()
+        while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.LOG_AND_OPERATOR:
+            self._current_token = self.get_next_token()
+            self.NotFactor()
+            print 'POP D1'
+            print 'POP D0'
+            print 'AND D0, D1'
+            print 'PUSH D0'
+        return
+
+    def NotFactor(self):
+        # As of now it is directly calling next step. Future It will do the logical not operation.
+        self.BFactor()
+        return
+
+    def BFactor(self):
+        self.Relation()
         return
 
     def Term(self):
@@ -256,7 +342,7 @@ class Parser(object):
                 function_call = self._current_token.Value_Of_Token
                 while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.CLOSE_BRACE:
                     self._current_token = self.get_next_token()
-                print 'CALL '+ function_call
+                print 'CALL ' + function_call
                 print 'PUSH D0'                                                                 #Return Value
                 self._current_token = self.get_next_token()
             else:
