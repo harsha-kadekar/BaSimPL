@@ -71,7 +71,7 @@ class Lexxer(object):
         self.Tokens_Expression = [
             (r'[ \n\t]+', None),
             (r'\\[^\n]*', None),
-            (r'\=', Defined_Token_Types.ASSIGNMENT_OPERATOR),
+            (r'==', Defined_Token_Types.EQUALS_OPERATOR),
             (r'\(', Defined_Token_Types.OPEN_BRACE),
             (r'\)', Defined_Token_Types.CLOSE_BRACE),
             (r'\{', Defined_Token_Types.SEG_OPEN),
@@ -86,7 +86,7 @@ class Lexxer(object):
             (r'>=', Defined_Token_Types.GREATEREQUAL_OPERATOR),
             (r'<=', Defined_Token_Types.LESSEREQUAL_OPERATOR),
             (r'!=', Defined_Token_Types.NOTEQUAL_OPERATOR),
-            (r'==', Defined_Token_Types.EQUALS_OPERATOR),
+            (r'\=', Defined_Token_Types.ASSIGNMENT_OPERATOR),
             (r'and', Defined_Token_Types.LOG_AND_OPERATOR),
             (r'or', Defined_Token_Types.LOG_OR_OPERATOR),
             (r'not', Defined_Token_Types.LOG_NOT_OPERATOR),
