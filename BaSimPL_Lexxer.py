@@ -58,9 +58,11 @@ class Defined_Token_Types(object):
     SEG_CLOSE = 'SEG_CLOSE'
     SEMICOLON = 'SEMI_COLON'
     COMMA = 'COMMA'
-    IN_MODE = 'IN_MODE'
-    OUT_MODE = 'OUT_MODE'
+    FUNCTION_DEFINITION = 'FUNCT_DEF'
+    VOID = 'VOID'
     EOF = 'EOF'
+    INT_TYPE = 'INT_TYPE'
+    RETURN = 'FUN_RETURN'
 
 
 # Name: Lexxer
@@ -93,10 +95,13 @@ class Lexxer(object):
             (r'if', Defined_Token_Types.IF),
             (r'else', Defined_Token_Types.ELSE),
             (r'while', Defined_Token_Types.WHILE),
-            (r'in', Defined_Token_Types.IN_MODE),
-            (r'out', Defined_Token_Types.OUT_MODE),
+            (r'funct', Defined_Token_Types.FUNCTION_DEFINITION),
+            (r'void', Defined_Token_Types.VOID),
+            (r'int', Defined_Token_Types.INT_TYPE),
+            (r'return', Defined_Token_Types.RETURN),
             (r'[0-9]+', Defined_Token_Types.INT),
-            (r'[A-Za-z][A-Za-z0-9_]*', Defined_Token_Types.IDENTIFIER)
+            (r'[A-Za-z][A-Za-z0-9_]*', Defined_Token_Types.IDENTIFIER),
+            (r',', Defined_Token_Types.COMMA)
         ]
         self._List_Of_Generated_Tokens = []
 

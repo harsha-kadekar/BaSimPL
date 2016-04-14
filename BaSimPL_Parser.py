@@ -12,9 +12,22 @@ import BaSimPL_Lexxer as Lex
 #               GRAMMAR OF BaSimPL                                                                                  #
 #####################################################################################################################
 
+# program -> topLevelDeclarations*
+# topLevelDeclaration -> functionDecl | GlobalDataDecl | globalAssignment
+# GlobalDecl -> TYPE_DECL declList SEMICOLON
+# DataDecl -> TYPE_DECL declList SEMI_COLON
+# functionDecl -> FUNCT_DEF funcReturnType ID OPEN_BRACE PARAMETER_LIST CLOSE_BRACE funBlock
+# funReturnType -> VOID | INT_TYPE
+# declList -> ID { COMA ID }
+# funBlock -> SEG_OPEN declRegion SEQSTATMENTS SEG_CLOSE
+# declRegion -> DataDecl*
+# globalAssignment -> ID ASSIGN_OPERATOR INT SEMI_COLON
+# PARAMETER_LIST -> TYPE_DECL ID { COMA TYPE_DECL ID }
+# TYPE_DECL -> INT_TYPE
+
 # SEQSTATEMENTS -> STATEMENT {STATEMENT}
 # STATEMENT -> simpleSTATEMENT | compoundSTATEMENT
-# simpleSTATEMENT -> assignmentSTATEMENT | procedureSTATEMENT
+# simpleSTATEMENT -> assignmentSTATEMENT | procedureSTATEMENT | returnStatement
 # compoundSTATEMENT -> ifSTATEMENT | whileSTATEMENT
 # assignmentSTATEMENT -> ID ASSIGNT_OPERATOR expression SEMI_COLON
 # ifSTATEMENT -> IF OPEN_BRACE expression CLOSE_BRACE SEG_OPEN SEQSTATEMENTS SEG_CLOSE {ELSE SEG_OPEN SEQSTATEMENTS SEG_CLOSE}
@@ -23,11 +36,15 @@ import BaSimPL_Lexxer as Lex
 # bterm -> notfactor [AND_OPR notfactor]*
 # notfactor -> [NOT] bfactor
 # bfactor -> INT | ID | relation
-# -----------> not used --------------------expression -> relation {AND_OPR relation} | {OR_OPR relation}
+# procedureSTATEMENT -> procedureCall SEMI_COLON
+# procedureCall -> ID OPEN_BRACE ARGU_LIST* CLOSE_BRACE
+# returnStatement -> FUN_RETURN returnValues SEMI_COLON
+# returnValues -> ID | INT | NULL
+# ARGU_LIST -> ID {COMMA ID }
 # relation -> simpleExpression { relationalOperator simpleExpression}
 # simpleExpression -> term { ADDSUB_OPERATOR term}
 # term -> factor { MULDIV_OPERATOR factor}
-# factor -> OPEN_BRACE simpleExpression CLOSE_BRACE | ID | INT | procedureSTATEMENT
+# factor -> OPEN_BRACE simpleExpression CLOSE_BRACE | ID | INT | procedureCall
 # ADDSUB_OPEATOR -> ADD_OPERATOR | SUB_OPERATOR
 # MULDIV_OPERATOR -> MUL_OPERATOR | DIV_OPERATOR
 # relationalOperator ->  EQUALS | GREATER | LESSER | GREATEREQUAL | LESSEREQUAL | NOTEQUAL
@@ -47,8 +64,11 @@ import BaSimPL_Lexxer as Lex
 # ASSIGNT_OPERATOR -> "=="
 # EQUALS -> "="
 # SEMI_COLON -> ";"
-# IN_MODE -> "in"
-# OUT_MODE -> "out"
+# FUNCT_DEF -> "funct"
+# VOID -> "void"
+# INT_TYPE -> "int"
+# COMMA -> ","
+# FUN_RETURN -> "return"
 
 #####################################################################################################################
 #####################################################################################################################
@@ -63,6 +83,7 @@ class Parser(object):
         self._List_Of_Tokens = []
         self._current_token = None
         self._Label_Counter = 0
+        self._Line_Counter = 0
 
     @property
     def List_Of_Tokens(self):
@@ -101,6 +122,163 @@ class Parser(object):
 
         return label
 
+    # program -> topLevelDeclarations*
+# topLevelDeclaration -> functionDecl | GlobalDataDecl | globalAssignment
+# GlobalDecl -> TYPE_DECL declList SEMICOLON
+# DataDecl -> TYPE_DECL declList SEMI_COLON
+# functionDecl -> FUNCT_DEF funcReturnType ID OPEN_BRACE PARAMETER_LIST CLOSE_BRACE funBlock
+# funReturnType -> VOID | INT_TYPE
+# declList -> ID { COMA ID }
+# funBlock -> SEG_OPEN declRegion SEQSTATMENTS SEG_CLOSE
+# declRegion -> DataDecl*
+# globalAssignment -> ID ASSIGN_OPERATOR INT SEMI_COLON
+# PARAMETER_LIST -> TYPE_DECL ID { COMA TYPE_DECL ID }
+# TYPE_DECL -> INT_TYPE
+
+    def Program(self):
+        # while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.EOF:
+        #    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+        while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.EOF:
+            self.TopLevelDeclaration()
+        return
+
+    def TopLevelDeclaration(self):
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.FUNCTION_DEFINITION:
+            self._current_token = self.get_next_token()
+            self.FunctionDeclaration()
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+            self.GlobalDataDeclaration()
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+            self.GlobalAssignment()
+        else:
+            errorMsg = 'Invalid token - Should have been a global declaration, global assignment or function'
+            self.Error(errorMsg)
+        return
+
+    def GlobalDataDeclaration(self):
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+            # Need to make an entry in the symbol table
+            # Also allocate in symbol table
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                # Allocate it in symbol table
+                self._current_token = self.get_next_token()
+                while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                        #Allocate it in symbol table
+                        x = 0
+                    else:
+                        errorMsg = 'expected an identifier'
+                        self.Error(errorMsg)
+                    self._current_token = self.get_next_token()
+            else:
+                errorMsg = 'Expected an identifier'
+                self.Error(errorMsg)
+        else:
+            errorMsg = 'Invalid type'
+            self.Error(errorMsg)
+
+        return
+
+    def DataDeclaration(self):
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+            # Need to make an entry in the symbol table
+            # Also allocate in symbol table
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                # Allocate it in symbol table
+                self._current_token = self.get_next_token()
+                while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                        #Allocate it in symbol table
+                        x = 0
+                    else:
+                        errorMsg = 'expected an identifier'
+                        self.Error(errorMsg)
+                    self._current_token = self.get_next_token()
+            else:
+                errorMsg = 'Expected an identifier'
+                self.Error(errorMsg)
+        else:
+            errorMsg = 'Invalid type'
+            self.Error(errorMsg)
+        return
+
+    def FunctionDeclaration(self):
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.VOID:
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.VOID:
+                # No return type So then dont allocate anyting.
+                x = 0
+            else:
+                # Function is going to return an integer value
+                x = 0
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                labelOfFunction = self.generate_labels('FUNCT', 1)
+                functionName = self._current_token.Value_Of_Token
+                self._current_token = self.get_next_token()
+                if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
+                    self._current_token = self.get_next_token()
+                    while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.CLOSE_BRACE:
+                        #Handle Parameters
+                        x = 0
+                    self._current_token = self.get_next_token()
+                    self.FunctionBody()
+                else:
+                    errorMsg = 'Expected ('
+                    self.Error(errorMsg)
+
+            else:
+                errorMsg = 'Expected an identifier'
+                self.Error(errorMsg)
+        else:
+            errorMsg = 'Expected a return type'
+            self.Error(errorMsg)
+        return
+
+    def FunctionBody(self):
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
+            self._current_token = self.get_next_token()
+            #while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+                self.DeclRegion()
+            self.SeqStatements()
+        else:
+            errorMsg = 'Expected {'
+            self.Error(errorMsg)
+        return
+
+    def DeclRegion(self):
+        while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+            self.DataDeclaration()
+            self._current_token = self.get_next_token()
+        return
+
+    def GlobalAssignment(self):
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+            variable = self._current_token.Value_Of_Token
+            self._current_token = self.get_next_token()
+            if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.ASSIGNMENT_OPERATOR:
+                self._current_token = self.get_next_token()
+                self.Expression()
+                if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
+                    print 'LEA A0, ' + variable + '(PC)'
+                    print 'POP D0'
+                    print 'MOV (A0), D0'
+                    self._Line_Counter += 3
+                    self._current_token = self.get_next_token()
+                else:
+                    errormsg = 'Expected a Semicolon ; but got some other token'
+                    self.Error(errormsg)
+            else:
+                errormsg = 'Expected an assignment operator'
+                self.Error(errormsg)
+        else:
+            errorMsg = 'Expected an identifier'
+            self.Error(errorMsg)
+
+        return
+
     def SimpleExpression(self):
         self.Term()
         # print 'MOV D0, D1'
@@ -119,12 +297,12 @@ class Parser(object):
                 print 'POP D0'
                 print 'SUB D0, D1'
             print 'PUSH D0'
-
+            self._Line_Counter += 4
         return
 
     def SeqStatements(self):
 
-        while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.EOF:
+        while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
             self.Statements()
 
         return
@@ -145,6 +323,7 @@ class Parser(object):
                 self._current_token = self.get_next_token()
             self._current_token = self.get_next_token()
             print 'CALL ' + function_call
+            self._Line_Counter += 1
         else:
             self.AssignmentStatement()
         return
@@ -169,6 +348,7 @@ class Parser(object):
                     print 'LEA A0, ' + variable + '(PC)'
                     print 'POP D0'
                     print 'MOV (A0), D0'
+                    self._Line_Counter += 3
                     self._current_token = self.get_next_token()
                 else:
                     errormsg = 'Expected a Semicolon ; but got some other token'
@@ -191,6 +371,7 @@ class Parser(object):
             self.Expression()
             print 'POP D0'
             print 'BEQ '+endIflabel
+            self._Line_Counter += 2
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
                 self._current_token = self.get_next_token()
                 if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
@@ -204,6 +385,7 @@ class Parser(object):
                         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
                             endElselable = self.generate_labels('ELSE', 0)
                             print 'JMP ' + endIflabel
+                            self._Line_Counter += 1
                             print endIflabel + ':'
                             self._current_token = self.get_next_token()
                             while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
@@ -236,6 +418,7 @@ class Parser(object):
             self.Expression()
             print 'POP D0'
             print 'BEQ ' + endWhileLabel
+            self._Line_Counter += 2
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
                 self._current_token = self.get_next_token()
                 if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
@@ -244,6 +427,7 @@ class Parser(object):
                         self.Statements()
                     self._current_token = self.get_next_token()
                     print 'JMP ' + startWhileLabel
+                    self._Line_Counter += 1
                     print endWhileLabel + ':'
                 else:
                     errorMsg = 'Expected {'
@@ -265,6 +449,7 @@ class Parser(object):
             print 'POP D0'
             print 'OR D0, D1'
             print 'PUSH D0'
+            self._Line_Counter += 4
 
         return
 
@@ -291,6 +476,7 @@ class Parser(object):
             else:
                 print 'CLT D0,D1'
             print 'PUSH D0'
+            self._Line_Counter += 4
         return
 
     def BTerm(self):
@@ -302,6 +488,7 @@ class Parser(object):
             print 'POP D0'
             print 'AND D0, D1'
             print 'PUSH D0'
+            self._Line_Counter += 4
         return
 
     def NotFactor(self):
@@ -331,6 +518,7 @@ class Parser(object):
                 print 'POP D0'
                 print 'DIV D0, D1'
             print 'PUSH D0'
+            self._Line_Counter += 4
 
         return
 
@@ -341,6 +529,7 @@ class Parser(object):
             #movi A, value
             print 'MOVI D0, ' + self._current_token.Value_Of_Token
             print 'PUSH D0'
+            self._Line_Counter += 2
             self._current_token = self.get_next_token()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
             next_token = self.peek_next_token()
@@ -351,11 +540,13 @@ class Parser(object):
                     self._current_token = self.get_next_token()
                 print 'CALL ' + function_call
                 print 'PUSH D0'                                                                 #Return Value
+                self._Line_Counter += 2
                 self._current_token = self.get_next_token()
             else:
                 print 'LEA A0, ' + self._current_token.Value_Of_Token + '(PC)'
                 print 'MOV D0, (A0)'
                 print 'PUSH D0'
+                self._Line_Counter += 3
                 self._current_token = self.get_next_token()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
             self._current_token = self.get_next_token()
