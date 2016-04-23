@@ -63,6 +63,8 @@ class Defined_Token_Types(object):
     EOF = 'EOF'
     INT_TYPE = 'INT_TYPE'
     RETURN = 'FUN_RETURN'
+    INPUT = 'CONSOLE_INPUT'
+    OUTPUT = 'CONSOLE_OUTPUT'
 
 
 # Name: Lexxer
@@ -99,6 +101,8 @@ class Lexxer(object):
             (r'void', Defined_Token_Types.VOID),
             (r'int', Defined_Token_Types.INT_TYPE),
             (r'return', Defined_Token_Types.RETURN),
+            (r'in', Defined_Token_Types.INPUT),
+            (r'out', Defined_Token_Types.OUTPUT),
             (r'[0-9]+', Defined_Token_Types.INT),
             (r'[A-Za-z][A-Za-z0-9_]*', Defined_Token_Types.IDENTIFIER),
             (r',', Defined_Token_Types.COMMA)

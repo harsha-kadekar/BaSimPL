@@ -1,9 +1,9 @@
 
 class DummyRunTime(object):
     def __init__(self, inputfile):
-        self._reg_d0 = None
-        self._reg_d1 = None
-        self._reg_a0 = None
+        self._reg_d0 = 0
+        self._reg_d1 = 0
+        self._reg_a0 = -1
         self._stack = []
         self._labelMapper = {}
         self._variableMapper = {}
@@ -12,6 +12,7 @@ class DummyRunTime(object):
         self._InstructionPointer = -1
         self._functionMap = {}
         self._debug = 0
+        self._returnAddress = []
 
     @property
     def IntermediateFile(self):
@@ -53,66 +54,188 @@ class DummyRunTime(object):
                 self._labelMapper.__setitem__(label_name, lineNo)
             lineNo += 1
 
+    def PrintDebugInfo(self):
+        if self._debug == 1:
+            print '\n'
+            print '+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=++DEBUG INFORMATION++=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+='
+            print 'D0:\t' + self._reg_d0.__str__()
+            print 'D1:\t' + self._reg_d1.__str__()
+            print 'A0:\t' + self._reg_a0.__str__()
+            print 'InstructionPointer:\t' + self._InstructionPointer.__str__()
+            print 'Instruction To Be Executed:\t' + self._IntermediateCode[self._InstructionPointer]
+            print 'STACK:\t' + self._stack.__str__()
+            print 'STACKED RETURN ADDRESS:\t' + self._returnAddress.__str__()
+            print '\nVARIABLES:'
+            print self._variableMapper
+            print '\nFUNCTIONS:'
+            print self._functionMap
+            print '\nLABELS:'
+            print self._labelMapper
+            print '+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+='
+            print '\n'
+
+    def ALU_LWSW_BRANCH(self, ip):
+        instruction = self._IntermediateCode[ip]
+        splitInst = instruction.split(' ')
+        opcode = splitInst[0]
+
+        if opcode == 'ALOC':
+            self._variableMapper.__setitem__(ip, 0)
+            ip += 1
+        elif opcode == 'MOVI':
+            operands = splitInst[1].split(',')
+            self._reg_d0 = int(operands[1].strip())
+            ip += 1
+        elif opcode == 'PUSH':
+            if splitInst[1].__contains__("D0"):
+                self._stack.insert(0,self._reg_d0)
+            else:
+                self._stack.insert(0,self._reg_d0)
+            ip += 1
+        elif opcode == 'LEA':
+            operands = splitInst[1].split(',')
+            address = operands[1].strip()
+            address = address.replace('(PC)', '')
+            self._reg_a0 = int(address)
+
+            ip += 1
+        elif opcode == 'POP':
+            if splitInst[1].__contains__('D0'):
+                self._reg_d0 = self._stack[0]
+            else:
+                self._reg_d1 = self._stack[0]
+            self._stack.__delitem__(0)
+            ip += 1
+        elif opcode == 'MOV':
+            operands = splitInst[1].split(',')
+            value = None
+            if operands[1].strip() == '(A0)':
+                value = self._variableMapper[self._reg_a0]
+            elif operands[1].strip() == 'D1':
+                value = self._reg_d1
+            else:
+                value = self._reg_d0
+
+            if operands[0].strip() == '(A0)':
+                self._variableMapper[self._reg_a0] = value
+            elif operands[0].strip() == 'D1':
+                self._reg_d1 = value
+            else:
+                self._reg_d0 = value
+
+            ip += 1
+
+        elif opcode == 'CGT':
+            if self._reg_d0 > self._reg_d1:
+                self._reg_d0 = 1
+            else:
+                self._reg_d0 = 0
+
+            ip += 1
+        elif opcode == 'BEQ':
+            if self._reg_d0 == 1:
+                ip = self._labelMapper[splitInst[1].strip()] + 1
+            else:
+                ip += 1
+        elif opcode == 'BNE':
+            if self._reg_d0 == 0:
+                ip = self._labelMapper[splitInst[1].strip()] + 1
+            else:
+                ip += 1
+        elif opcode == 'MUL':
+            self._reg_d0 = self._reg_d0 * self._reg_d1
+            ip += 1
+        elif opcode == 'SUB':
+            self._reg_d0 = self._reg_d0 - self._reg_d1
+            ip += 1
+        elif opcode == 'JMP':
+            ip = self._labelMapper[splitInst[1].strip()] + 1
+        elif opcode == 'CALL':
+            returnAddress = ip + 1
+            self._returnAddress.insert(0, returnAddress)
+            ip = self._functionMap[splitInst[1].strip()] + 1
+        elif opcode == 'ret':
+            ip = self._returnAddress[0]
+            self._returnAddress.__delitem__(0)
+        elif opcode == 'ADD':
+            self._reg_d0 = self._reg_d0 + self._reg_d1
+            ip += 1
+        elif opcode == 'DIV':
+            self._reg_d0 = int(self._reg_d0/self._reg_d1)
+            ip += 1
+        elif opcode == 'OR':
+            self._reg_d0 = self._reg_d0 or self._reg_d1
+            ip += 1
+        elif opcode == 'AND':
+            self._reg_d0 = self._reg_d0 and self._reg_d1
+            ip += 1
+        elif opcode == 'CEQ':
+            if self._reg_d0 == self._reg_d1:
+                self._reg_d0 = 1
+            else:
+                self._reg_d0 = 0
+            ip += 1
+        elif opcode == 'CNE':
+            if self._reg_d0 != self._reg_d1:
+                self._reg_d0 = 1
+            else:
+                self._reg_d0 = 0
+            ip += 1
+        elif opcode == 'CLT':
+            if self._reg_d0 < self._reg_d1:
+                self._reg_d0 = 1
+            else:
+                self._reg_d0 = 0
+            ip += 1
+        elif opcode == 'CGE':
+            if self._reg_d0 >= self._reg_d1:
+                self._reg_d0 = 1
+            else:
+                self._reg_d0 = 0
+            ip += 1
+        elif opcode == 'CLE':
+            if self._reg_d0 <= self._reg_d1:
+                self._reg_d0 = 1
+            else:
+                self._reg_d0 = 0
+
+            ip += 1
+        elif opcode == 'OUT':
+            print self._reg_d0
+            ip += 1
+        elif opcode == 'IN':
+            self._reg_d0 = int(raw_input('ENTER INPUT FOR VARIABLE:'))
+            ip += 1
+        else:
+            ip += 1 # encounted a label
+        return ip
+
     def executecode(self):
         self.readIntermediateFile()
         self.GenerateFunctionandLabelMap()
+
+
+        self._InstructionPointer = 0
+        while self._InstructionPointer < self._IntermediateCode.__len__() and self._IntermediateCode[self._InstructionPointer].split(' ')[0].startswith('FUNCT_BEGIN_') == False:
+            self.PrintDebugInfo()
+            self._InstructionPointer = self.ALU_LWSW_BRANCH(self._InstructionPointer)
+
+        self.PrintDebugInfo()
+
+        self._reg_d1 = 0
+        self._reg_a0 = -1
+        self._reg_d0 = 0
+        self._stack = []
+        self._returnAddress = []
+
         self.SetInstructionPointerToMain()
-
+        self._returnAddress.insert(0, -999)
         last_instruction_address = self._IntermediateCode.__len__()
-        while self._InstructionPointer < last_instruction_address:
-            instruction = self._IntermediateCode[self._InstructionPointer]
-            splitInst = instruction.split(' ')
-            opcode = splitInst[0]
+        while self._InstructionPointer < last_instruction_address and self._InstructionPointer != -999:
+            self.PrintDebugInfo()
+            self._InstructionPointer = self.ALU_LWSW_BRANCH(self._InstructionPointer)
 
-            if opcode == 'ALOC':
-                x = 0
-            elif opcode == 'MOVI':
-                x = 0
-            elif opcode == 'PUSH':
-                x = 0
-            elif opcode == 'LEA':
-                x = 1
-            elif opcode == 'POP':
-                x = 2
-            elif opcode == 'MOV':
-                x = 3
-            elif opcode == 'CGT':
-                x = 4
-            elif opcode == 'BEQ':
-                x = 5
-            elif opcode == 'MUL':
-                x = 6
-            elif opcode == 'SUB':
-                x = 7
-            elif opcode == 'JMP':
-                x = 8
-            elif opcode == 'CALL':
-                x = 9
-            elif opcode == 'ret':
-                x = 0
-            elif opcode == 'ADD':
-                x = 1
-            elif opcode == 'DIV':
-                x = 2
-            elif opcode == 'OR':
-                x = 2
-            elif opcode == 'AND':
-                x = 3
-            elif opcode == 'CEQ':
-                x = 4
-            elif opcode == 'CNE':
-                x = 1
-            elif opcode == 'CLT':
-                x = 2
-            elif opcode == 'CGE':
-                x = 3
-            elif opcode == 'CLE':
-                x = 4
-            else:
-                x = 5
-
-
-
+        # self.PrintDebugInfo()
 
         return
 

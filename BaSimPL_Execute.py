@@ -39,11 +39,11 @@ def Interpreter_Test(file_name):
 
 if __name__=='__main__':
     filename = 'Input.txt'
-    file = open(filename)
-    characters = file.read()
-    file.close()
-    Lexxer_Tester(characters)
+    # file = open(filename)
+    # characters = file.read()
+    # file.close()
+    # Lexxer_Tester(characters)
     # text = '( n / 2 ) * 345 + 34 - ( 4 + 5 ) * 123'
-    Parser_Tester(characters)
-    Compiler_Tester(filename)
+    # Parser_Tester(characters)
+    # Compiler_Tester(filename)
     Interpreter_Test(filename)

@@ -337,11 +337,11 @@ class Parser(object):
                         self.AddIntermediateCode(line)
                         NewEntry = entItem.Entry(param[1], self._Line_Counter, 'VAR', None, None)
                         self._curSymTable.initEntry(param[1], NewEntry)
+                        line = 'LEA A0,'+self._Line_Counter.__str__()+'(PC)'
+                        self.AddIntermediateCode(line)
                         line = 'POP D0'
                         self.AddIntermediateCode(line)
-                        line = 'LEA A0, '+self._Line_Counter.__str__()+'(PC)'
-                        self.AddIntermediateCode(line)
-                        line = 'MOV (A0), D0'
+                        line = 'MOV (A0),D0'
                         self.AddIntermediateCode(line)
 
                     self._current_token = self.get_next_token()
@@ -395,11 +395,11 @@ class Parser(object):
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    line = 'LEA A0, ' + location.__str__() + '(PC)'
+                    line = 'LEA A0,' + location.__str__() + '(PC)'
                     self.AddIntermediateCode(line)
                     line = 'POP D0'
                     self.AddIntermediateCode(line)
-                    line = 'MOV (A0), D0'
+                    line = 'MOV (A0),D0'
                     self.AddIntermediateCode(line)
                     self._current_token = self.get_next_token()
                 else:
@@ -426,7 +426,7 @@ class Parser(object):
                 self.AddIntermediateCode(line)
                 line = 'POP D0'
                 self.AddIntermediateCode(line)
-                line =  'ADD D0, D1'
+                line =  'ADD D0,D1'
                 self.AddIntermediateCode(line)
             else:
                 self._current_token = self.get_next_token()
@@ -435,7 +435,7 @@ class Parser(object):
                 self.AddIntermediateCode(line)
                 line = 'POP D0'
                 self.AddIntermediateCode(line)
-                line = 'SUB D0, D1'
+                line = 'SUB D0,D1'
                 self.AddIntermediateCode(line)
             line = 'PUSH D0'
             self.AddIntermediateCode(line)
@@ -481,6 +481,10 @@ class Parser(object):
             self.AddIntermediateCode(line)
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.RETURN:
             self.HandleReturnStatement()
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INPUT:
+            self.HandleInputStatement()
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OUTPUT:
+            self.HandleOutputStatement()
         else:
             self.AssignmentStatement()
         return
@@ -497,6 +501,49 @@ class Parser(object):
         self.AddIntermediateCode(line)
         self._current_token = self.get_next_token()
 
+    def HandleInputStatement(self):
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.IDENTIFIER:
+            errorMsg = 'Expected an Identifier'
+            self.Error(errorMsg)
+            return
+
+        if not self._curSymTable.searchTable(self._current_token.Value_Of_Token):
+            errorMsg = 'Identifer ' + self._current_token.Value_Of_Token + ' is not declared'
+            self.Error(errorMsg)
+            return
+
+        entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
+        line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+        self.AddIntermediateCode(line)
+        line = 'IN D0'
+        self.AddIntermediateCode(line)
+        line = 'MOV (A0),D0'
+        self.AddIntermediateCode(line)
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+            errorMsg = 'Expected a ;'
+            self.Error(errorMsg)
+            return
+
+        self._current_token = self.get_next_token()
+
+    def HandleOutputStatement(self):
+        self._current_token = self.get_next_token()
+        self.Expression()
+
+        line = 'POP D0'
+        self.AddIntermediateCode(line)
+        line = 'OUT D0'
+        self.AddIntermediateCode(line)
+
+        if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+            errorMsg = 'Expected a ;'
+            self.Error(errorMsg)
+            return
+
+        self._current_token = self.get_next_token()
 
     def CompoundStatement(self):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IF:
@@ -522,11 +569,11 @@ class Parser(object):
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    line = 'LEA A0, ' + entry.symLocation.__str__() + '(PC)'
+                    line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
                     self.AddIntermediateCode(line)
                     line = 'POP D0'
                     self.AddIntermediateCode(line)
-                    line = 'MOV (A0), D0'
+                    line = 'MOV (A0),D0'
                     self.AddIntermediateCode(line)
                     self._current_token = self.get_next_token()
                 else:
@@ -601,7 +648,7 @@ class Parser(object):
             self.Expression()
             line = 'POP D0'
             self.AddIntermediateCode(line)
-            line = 'BEQ ' + endWhileLabel
+            line = 'BNE ' + endWhileLabel
             self.AddIntermediateCode(line)
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
                 self._current_token = self.get_next_token()
@@ -634,7 +681,7 @@ class Parser(object):
             self.AddIntermediateCode(line)
             line = 'POP D0'
             self.AddIntermediateCode(line)
-            line = 'OR D0, D1'
+            line = 'OR D0,D1'
             self.AddIntermediateCode(line)
             line =  'PUSH D0'
             self.AddIntermediateCode(line)
@@ -654,7 +701,7 @@ class Parser(object):
             line = 'POP D0'
             self.AddIntermediateCode(line)
             if relop == Lex.Defined_Token_Types.NOTEQUAL_OPERATOR:
-                line = 'CNE D0, D1'
+                line = 'CNE D0,D1'
                 self.AddIntermediateCode(line)
             elif relop == Lex.Defined_Token_Types.EQUALS_OPERATOR:
                 line = 'CEQ D0,D1'
@@ -688,7 +735,7 @@ class Parser(object):
             self.AddIntermediateCode(line)
             line = 'POP D0'
             self.AddIntermediateCode(line)
-            line = 'AND D0, D1'
+            line = 'AND D0,D1'
             self.AddIntermediateCode(line)
             line = 'PUSH D0'
             self.AddIntermediateCode(line)
@@ -714,7 +761,7 @@ class Parser(object):
                 self.AddIntermediateCode(line)
                 line = 'POP D0'
                 self.AddIntermediateCode(line)
-                line = 'MUL D0, D1'
+                line = 'MUL D0,D1'
                 self.AddIntermediateCode(line)
 
             else:
@@ -724,7 +771,7 @@ class Parser(object):
                 self.AddIntermediateCode(line)
                 line = 'POP D0'
                 self.AddIntermediateCode(line)
-                line = 'DIV D0, D1'
+                line = 'DIV D0,D1'
                 self.AddIntermediateCode(line)
             line = 'PUSH D0'
             self.AddIntermediateCode(line)
@@ -736,7 +783,7 @@ class Parser(object):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT:
             # This is a constant
             #movi A, value
-            line = 'MOVI D0, ' + self._current_token.Value_Of_Token
+            line = 'MOVI D0,' + self._current_token.Value_Of_Token
             self.AddIntermediateCode(line)
             line = 'PUSH D0'
             self.AddIntermediateCode(line)
@@ -779,9 +826,9 @@ class Parser(object):
                     return
                 entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
 
-                line = 'LEA A0, ' + entry._symLocation.__str__() + '(PC)'
+                line = 'LEA A0,' + entry._symLocation.__str__() + '(PC)'
                 self.AddIntermediateCode(line)
-                line = 'MOV D0, (A0)'
+                line = 'MOV D0,(A0)'
                 self.AddIntermediateCode(line)
                 line = 'PUSH D0'
                 self.AddIntermediateCode(line)

@@ -1,7 +1,7 @@
 
 int x, y;
-y = 10;
-x = 10;
+y = 3;
+x = 5;
 
 funct int Factorial_Iterative(int n)
 {
@@ -19,7 +19,12 @@ funct int Factorial_Iterative(int n)
 funct void main()
 {
   int val;
+  out y;
+  out x;
+  in y;
+  out y;
   val = Factorial_Iterative(y);
+  out val;
 
   return;
 }
