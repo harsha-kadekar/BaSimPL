@@ -291,7 +291,8 @@ class Parser(object):
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
                 labelOfFunction = self.generate_labels('FUNCT', 1)
                 functionName = self._current_token.Value_Of_Token
-                labelOfFunction = labelOfFunction + '_' + functionName
+                # labelOfFunction = labelOfFunction + '_' + functionName
+                labelOfFunction = 'FUNCT_BEGIN_' + functionName
                 if self._globalTable.searchTable(self._current_token.Value_Of_Token):
                     errorMsg = 'Already a function/variable with name ' + functionName + ' exists'
                     self.Error(errorMsg)

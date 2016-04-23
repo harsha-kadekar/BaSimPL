@@ -6,6 +6,7 @@ import BaSimPL_Lexxer as Lex
 import BaSimPL_Compiler as CC
 import BaSimPL_Parser as par
 import BaSimPL_Interpreter as interep
+import BaSimPL_DummyRuntime as runTime
 
 def Lexxer_Tester(text_of_program):
     lexAnalysis = Lex.Lexxer(text_of_program)
@@ -27,6 +28,14 @@ def Compiler_Tester(file_name):
     Basimplcc.DebugState = 1
     Basimplcc.generate_intermediate_file()
 
+def Interpreter_Test(file_name):
+    Basimplcc = CC.Compiler(file_name)
+    Basimplcc.DebugState = 1
+    Basimplcc.generate_intermediate_file()
+    Basimplip = runTime.DummyRunTime(Basimplcc.OutputIntermediateFile)
+    Basimplip.DebugFlag = 1
+    Basimplip.executecode()
+
 
 if __name__=='__main__':
     filename = 'Input.txt'
@@ -37,3 +46,4 @@ if __name__=='__main__':
     # text = '( n / 2 ) * 345 + 34 - ( 4 + 5 ) * 123'
     Parser_Tester(characters)
     Compiler_Tester(filename)
+    Interpreter_Test(filename)
