@@ -1,7 +1,7 @@
 
 
 class Entry(object):
-    def __init__ (self, symName, symLocation, symType, symValue, symReturnType):
+    def __init__ (self, symName, symLocation, symType, symValue, symReturnType, symGlobal):
         # self._token = token
         self._symName = symName
         self._symLocation = symLocation
@@ -9,6 +9,7 @@ class Entry(object):
         self._symValue = symValue
         self._symReturnType = symReturnType
         self._symParamList = []
+        self._symLocalOrGlobal = symGlobal
 
     '''
     @property
@@ -19,6 +20,14 @@ class Entry(object):
     def token(self):
         del self._token
     '''
+
+    @property
+    def symGlobalOrLocal(self):
+        return self._symLocalOrGlobal
+
+    @symGlobalOrLocal.setter
+    def symGlobalOrLocal(self, value):
+        self._symLocalOrGlobal = value
 
     @property
     def symName(self):

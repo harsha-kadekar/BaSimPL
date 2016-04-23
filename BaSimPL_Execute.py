@@ -28,9 +28,10 @@ def Compiler_Tester(file_name):
     Basimplcc.DebugState = 1
     Basimplcc.generate_intermediate_file()
 
-def Interpreter_Test(file_name):
+def Interpreter_Test(file_name, debug=0, outputfile='intermediate.bspl'):
     Basimplcc = CC.Compiler(file_name)
-    Basimplcc.DebugState = 1
+    Basimplcc.DebugState = debug
+    Basimplcc.OutputIntermediateFile = outputfile
     Basimplcc.generate_intermediate_file()
     Basimplip = runTime.DummyRunTime(Basimplcc.OutputIntermediateFile)
     Basimplip.DebugFlag = 1
@@ -38,7 +39,15 @@ def Interpreter_Test(file_name):
 
 
 if __name__=='__main__':
-    filename = 'Input.txt'
+    # filename = 'Input_1.txt'
+    inFile1 = 'factorial_iterative.smpl'
+    inFile2 = 'factorial_recursive.smpl'
+    inFile3 = 'hemachandra_fibonacci.smpl'
+
+    outFile1 = 'factorial_iterative.bspl'
+    outFile2 = 'factorial_recursive.bspl'
+    outFile3 = 'hemachandra_fibonacci.bspl'
+
     # file = open(filename)
     # characters = file.read()
     # file.close()
@@ -46,4 +55,7 @@ if __name__=='__main__':
     # text = '( n / 2 ) * 345 + 34 - ( 4 + 5 ) * 123'
     # Parser_Tester(characters)
     # Compiler_Tester(filename)
-    Interpreter_Test(filename)
+    Interpreter_Test(inFile1, 1, outFile1)
+    Interpreter_Test(inFile2, 1, outFile2)
+    Interpreter_Test(inFile3, 1, outFile3)
+    str = 'done'

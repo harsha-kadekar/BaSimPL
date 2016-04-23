@@ -185,9 +185,9 @@ class Parser(object):
                     self.Error(errorMsg)
                     return
 
-                line =  'ALOC VAR.' + self._current_token.Value_Of_Token
+                line =  'ALOC GLB.' + self._current_token.Value_Of_Token
                 self.AddIntermediateCode(line)
-                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None, 1)
                 self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
 
                 self._current_token = self.get_next_token()
@@ -199,9 +199,9 @@ class Parser(object):
                             self.Error(errorMsg)
                             return
 
-                        line = 'ALOC VAR.' + self._current_token.Value_Of_Token
+                        line = 'ALOC GLB.' + self._current_token.Value_Of_Token
                         self.AddIntermediateCode(line)
-                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None, 1)
                         self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
                     else:
                         errorMsg = 'expected an identifier'
@@ -233,9 +233,9 @@ class Parser(object):
                     errorMsg = 'A variable ' + self._current_token.Value_Of_Token + ' is already declared'
                     self.Error(errorMsg)
                     return
-                line = 'ALOC VAR.' + self._current_token.Value_Of_Token
+                line = 'ALOC LCB.' + self._current_token.Value_Of_Token
                 self.AddIntermediateCode(line)
-                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None, 0)
                 self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
 
                 self._current_token = self.get_next_token()
@@ -247,9 +247,9 @@ class Parser(object):
                             errorMsg = 'A variable ' + self._current_token.Value_Of_Token + ' is already declared'
                             self.Error(errorMsg)
                             return
-                        line = 'ALOC VAR.' + self._current_token.Value_Of_Token
+                        line = 'ALOC LCB.' + self._current_token.Value_Of_Token
                         self.AddIntermediateCode(line)
-                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None, 0)
                         self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
                     else:
                         errorMsg = 'expected an identifier'
@@ -273,6 +273,7 @@ class Parser(object):
         returnType = 0  # default trying to treat as void
         functionName = ''
         paramList = []
+        framePointer = 0
         self._curSymTable = syTable.SymTable(self._globalTable)
 
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.VOID:
@@ -325,7 +326,8 @@ class Parser(object):
 
                     line = labelOfFunction + ':'
                     self.AddIntermediateCode(line)
-                    NewEntry = entItem.Entry(functionName, self._Line_Counter, 'FUNCT', None, returnType)
+                    NewEntry = entItem.Entry(functionName, self._Line_Counter, 'FUNCT', None, returnType, 1)
+                    framePointer = self._Line_Counter
                     NewEntry.symParamList = paramList
                     self._globalTable.initEntry(functionName, NewEntry)
                     for param in paramList:
@@ -333,11 +335,11 @@ class Parser(object):
                             errorMsg = 'Already parameter ' + param[1] + ' is defined'
                             self.Error(errorMsg)
                             return
-                        line = 'ALOC VAR.' + param[1]
+                        line = 'ALOC LCB.' + param[1]
                         self.AddIntermediateCode(line)
-                        NewEntry = entItem.Entry(param[1], self._Line_Counter, 'VAR', None, None)
+                        NewEntry = entItem.Entry(param[1], self._Line_Counter, 'VAR', None, None, 0)
                         self._curSymTable.initEntry(param[1], NewEntry)
-                        line = 'LEA A0,'+self._Line_Counter.__str__()+'(PC)'
+                        line = 'LEA A0,'+NewEntry.symLocation.__str__()+'(FP)'
                         self.AddIntermediateCode(line)
                         line = 'POP D0'
                         self.AddIntermediateCode(line)
@@ -514,7 +516,12 @@ class Parser(object):
             return
 
         entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
-        line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+        line = ''
+        if entry.symGlobalOrLocal == 1:
+            line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+        else:
+            line = 'LEA A0,' + entry.symLocation.__str__() + '(FP)'
+
         self.AddIntermediateCode(line)
         line = 'IN D0'
         self.AddIntermediateCode(line)
@@ -569,7 +576,10 @@ class Parser(object):
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+                    if entry.symGlobalOrLocal == 1:
+                        line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+                    else:
+                        line = 'LEA A0,' + entry.symLocation.__str__() + '(FP)'
                     self.AddIntermediateCode(line)
                     line = 'POP D0'
                     self.AddIntermediateCode(line)
@@ -597,7 +607,7 @@ class Parser(object):
             self.Expression()
             line =  'POP D0'
             self.AddIntermediateCode(line)
-            line = 'BEQ '+endIflabel
+            line = 'BNE '+endIflabel
             self.AddIntermediateCode(line)
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
                 self._current_token = self.get_next_token()
@@ -611,7 +621,7 @@ class Parser(object):
                         self._current_token = self.get_next_token()
                         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
                             endElselable = self.generate_labels('ELSE', 0)
-                            line = 'JMP ' + endIflabel
+                            line = 'JMP ' + endElselable
                             self.AddIntermediateCode(line)
                             line = endIflabel + ':'
                             self.AddIntermediateCode(line)
@@ -826,7 +836,11 @@ class Parser(object):
                     return
                 entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
 
-                line = 'LEA A0,' + entry._symLocation.__str__() + '(PC)'
+                if entry.symGlobalOrLocal == 1:
+                    line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+                else:
+                    line = 'LEA A0,' + entry.symLocation.__str__() + '(FP)'
+
                 self.AddIntermediateCode(line)
                 line = 'MOV D0,(A0)'
                 self.AddIntermediateCode(line)

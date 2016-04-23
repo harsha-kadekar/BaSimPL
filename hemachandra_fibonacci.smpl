@@ -1,0 +1,46 @@
+funct void hemachandra_fibonacci(int val)
+{
+	int x1;
+	int x2;
+	int next;
+	int count;
+	
+	x1 = 0;
+	x2 = 1;
+	next = 0;
+	count = 0;
+
+	while( count < val )
+	{
+		if( count == 0 )
+		{
+			out x1;
+		}
+		else
+		{
+			if( count == 1 )
+			{
+				out x2;
+			}
+			else
+			{
+				next = x1 + x2;
+				x1 = x2;
+				x2 = next;
+				out next;
+			}
+		}
+		count = count + 1;
+	}
+	return;
+}
+
+funct void main()
+{
+	int x;
+	in x;
+	hemachandra_fibonacci(x);
+	return;
+}
+		
+		

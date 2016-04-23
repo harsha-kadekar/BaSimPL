@@ -3,16 +3,18 @@ class DummyRunTime(object):
     def __init__(self, inputfile):
         self._reg_d0 = 0
         self._reg_d1 = 0
-        self._reg_a0 = -1
+        self._reg_a0 = ''
         self._stack = []
         self._labelMapper = {}
-        self._variableMapper = {}
+        self._frames = []
+        self._globalVariable = {}
         self._IntermediateFile = inputfile
         self._IntermediateCode = []
         self._InstructionPointer = -1
         self._functionMap = {}
         self._debug = 0
         self._returnAddress = []
+        self._framePointer = []
 
     @property
     def IntermediateFile(self):
@@ -65,12 +67,16 @@ class DummyRunTime(object):
             print 'Instruction To Be Executed:\t' + self._IntermediateCode[self._InstructionPointer]
             print 'STACK:\t' + self._stack.__str__()
             print 'STACKED RETURN ADDRESS:\t' + self._returnAddress.__str__()
-            print '\nVARIABLES:'
-            print self._variableMapper
+            print '\nGLOBAL VARIABLES:'
+            print self._globalVariable
             print '\nFUNCTIONS:'
             print self._functionMap
             print '\nLABELS:'
             print self._labelMapper
+            print '\nFRAME POINTERS:'
+            print self._framePointer
+            print '\nFRAME ALLOCATIONS:'
+            print self._frames
             print '+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+='
             print '\n'
 
@@ -80,7 +86,13 @@ class DummyRunTime(object):
         opcode = splitInst[0]
 
         if opcode == 'ALOC':
-            self._variableMapper.__setitem__(ip, 0)
+            if splitInst[1].__contains__('GLB'):
+                self._globalVariable.__setitem__(ip, 0)
+            else:
+                localvariable = self._frames[0]
+                fp = self._framePointer[0]
+                localvariable.__setitem__(ip - fp, 0)
+
             ip += 1
         elif opcode == 'MOVI':
             operands = splitInst[1].split(',')
@@ -95,8 +107,7 @@ class DummyRunTime(object):
         elif opcode == 'LEA':
             operands = splitInst[1].split(',')
             address = operands[1].strip()
-            address = address.replace('(PC)', '')
-            self._reg_a0 = int(address)
+            self._reg_a0 = address
 
             ip += 1
         elif opcode == 'POP':
@@ -110,14 +121,28 @@ class DummyRunTime(object):
             operands = splitInst[1].split(',')
             value = None
             if operands[1].strip() == '(A0)':
-                value = self._variableMapper[self._reg_a0]
+                if self._reg_a0.__contains__('(PC)'):
+                    address = int(self._reg_a0.replace('(PC)', ''))
+                    value = self._globalVariable[address]
+                else:
+                    address = int(self._reg_a0.replace('(FP)', ''))
+                    fp = self._framePointer[0]
+                    localvariable = self._frames[0]
+                    value = localvariable[address - fp]
             elif operands[1].strip() == 'D1':
                 value = self._reg_d1
             else:
                 value = self._reg_d0
 
             if operands[0].strip() == '(A0)':
-                self._variableMapper[self._reg_a0] = value
+                if self._reg_a0.__contains__('(PC)'):
+                    address = int(self._reg_a0.replace('(PC)', ''))
+                    self._globalVariable[address] = value
+                else:
+                    address = int(self._reg_a0.replace('(FP)', ''))
+                    fp = self._framePointer[0]
+                    localvariable = self._frames[0]
+                    localvariable[address - fp] = value
             elif operands[0].strip() == 'D1':
                 self._reg_d1 = value
             else:
@@ -154,9 +179,14 @@ class DummyRunTime(object):
             returnAddress = ip + 1
             self._returnAddress.insert(0, returnAddress)
             ip = self._functionMap[splitInst[1].strip()] + 1
+            NewFrame = {}
+            self._frames.insert(0, NewFrame)
+            self._framePointer.insert(0, ip - 1)
         elif opcode == 'ret':
             ip = self._returnAddress[0]
             self._returnAddress.__delitem__(0)
+            self._framePointer.__delitem__(0)
+            self._frames.__delitem__(0)
         elif opcode == 'ADD':
             self._reg_d0 = self._reg_d0 + self._reg_d1
             ip += 1
@@ -223,13 +253,18 @@ class DummyRunTime(object):
         self.PrintDebugInfo()
 
         self._reg_d1 = 0
-        self._reg_a0 = -1
+        self._reg_a0 = ''
         self._reg_d0 = 0
         self._stack = []
         self._returnAddress = []
+        self._framePointer = []
+        self._frames = []
 
         self.SetInstructionPointerToMain()
         self._returnAddress.insert(0, -999)
+        self._framePointer.insert(0, self._InstructionPointer - 1)
+        mainFrame = {}
+        self._frames.insert(0, mainFrame)
         last_instruction_address = self._IntermediateCode.__len__()
         while self._InstructionPointer < last_instruction_address and self._InstructionPointer != -999:
             self.PrintDebugInfo()

@@ -1,0 +1,40 @@
+
+int x, y;
+y = 3;
+x = 5;
+
+funct int Factorial_Recursive(int n)
+{
+	int x, val;
+	if(n == 1)
+	{
+		val = 1;
+	}
+	else
+	{
+		x = n - 1;
+		val = n * Factorial_Recursive(x);
+	}
+	return val;
+}
+
+funct void main()
+{
+  int val;
+  out y;
+  out x;
+  in y;
+  out y;
+  val = Factorial_Recursive(y);
+  out val;
+
+  return;
+}
+
+
+
+
+
+
+
+
