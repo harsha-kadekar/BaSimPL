@@ -19,6 +19,13 @@ def Parser_Tester(text_of_program):
     lexAnalysis.generate_Tokens()
     parser.List_Of_Tokens = lexAnalysis.List_Of_Generated_Tokens
     parser.ParseIt()
+    for line in parser._IntermediateCode:
+        print line
+
+def Compiler_Tester(file_name):
+    Basimplcc = CC.Compiler(file_name)
+    Basimplcc.DebugState = 1
+    Basimplcc.generate_intermediate_file()
 
 
 if __name__=='__main__':
@@ -29,3 +36,4 @@ if __name__=='__main__':
     Lexxer_Tester(characters)
     # text = '( n / 2 ) * 345 + 34 - ( 4 + 5 ) * 123'
     Parser_Tester(characters)
+    Compiler_Tester(filename)

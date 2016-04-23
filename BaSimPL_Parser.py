@@ -88,6 +88,8 @@ class Parser(object):
         self._Line_Counter = -1
         self._globalTable = syTable.SymTable(None)
         self._curSymTable = None
+        self._debug = 0
+        self._IntermediateCode = []
 
     @property
     def List_Of_Tokens(self):
@@ -97,6 +99,30 @@ class Parser(object):
     def List_Of_Tokens(self, value):
         self._List_Of_Tokens = value
         self._position_of_token = 0
+
+    @property
+    def DebugFlag(self):
+        return self._debug
+
+    @DebugFlag.setter
+    def DebugFlag(self, value):
+        self._debug = value
+
+    @property
+    def IntermediateByteCode(self):
+        return self._IntermediateCode
+
+    @IntermediateByteCode.setter
+    def IntermediateByteCode(self, value):
+        self._IntermediateCode = value
+
+    def AddIntermediateCode(self, line):
+        if self._debug == 1:
+            print line
+
+        self._IntermediateCode.append(line)
+        self._Line_Counter += 1
+
 
     def get_next_token(self):
         token = Lex.Token(Lex.Defined_Token_Types.EOF, None)
@@ -159,8 +185,8 @@ class Parser(object):
                     self.Error(errorMsg)
                     return
 
-                print 'ALOC VAR.' + self._current_token.Value_Of_Token
-                self._Line_Counter += 1
+                line =  'ALOC VAR.' + self._current_token.Value_Of_Token
+                self.AddIntermediateCode(line)
                 NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
                 self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
 
@@ -173,8 +199,8 @@ class Parser(object):
                             self.Error(errorMsg)
                             return
 
-                        print 'ALOC VAR.' + self._current_token.Value_Of_Token
-                        self._Line_Counter += 1
+                        line = 'ALOC VAR.' + self._current_token.Value_Of_Token
+                        self.AddIntermediateCode(line)
                         NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
                         self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
                     else:
@@ -207,8 +233,8 @@ class Parser(object):
                     errorMsg = 'A variable ' + self._current_token.Value_Of_Token + ' is already declared'
                     self.Error(errorMsg)
                     return
-                print 'ALOC VAR.' + self._current_token.Value_Of_Token
-                self._Line_Counter += 1
+                line = 'ALOC VAR.' + self._current_token.Value_Of_Token
+                self.AddIntermediateCode(line)
                 NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
                 self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
 
@@ -221,8 +247,8 @@ class Parser(object):
                             errorMsg = 'A variable ' + self._current_token.Value_Of_Token + ' is already declared'
                             self.Error(errorMsg)
                             return
-                        print 'ALOC VAR.' + self._current_token.Value_Of_Token
-                        self._Line_Counter += 1
+                        line = 'ALOC VAR.' + self._current_token.Value_Of_Token
+                        self.AddIntermediateCode(line)
                         NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
                         self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
                     else:
@@ -296,8 +322,8 @@ class Parser(object):
                         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
                             self._current_token = self.get_next_token()
 
-                    print labelOfFunction + ':'
-                    self._Line_Counter += 1
+                    line = labelOfFunction + ':'
+                    self.AddIntermediateCode(line)
                     NewEntry = entItem.Entry(functionName, self._Line_Counter, 'FUNCT', None, returnType)
                     NewEntry.symParamList = paramList
                     self._globalTable.initEntry(functionName, NewEntry)
@@ -306,16 +332,16 @@ class Parser(object):
                             errorMsg = 'Already parameter ' + param[1] + ' is defined'
                             self.Error(errorMsg)
                             return
-                        print 'ALOC VAR.' + param[1]
-                        self._Line_Counter += 1
+                        line = 'ALOC VAR.' + param[1]
+                        self.AddIntermediateCode(line)
                         NewEntry = entItem.Entry(param[1], self._Line_Counter, 'VAR', None, None)
                         self._curSymTable.initEntry(param[1], NewEntry)
-                        print 'POP D0'
-                        self._Line_Counter += 1
-                        print 'LEA A0, '+self._Line_Counter.__str__()+'(PC)'
-                        self._Line_Counter += 1
-                        print 'MOV (A0), D0'
-                        self._Line_Counter += 1
+                        line = 'POP D0'
+                        self.AddIntermediateCode(line)
+                        line = 'LEA A0, '+self._Line_Counter.__str__()+'(PC)'
+                        self.AddIntermediateCode(line)
+                        line = 'MOV (A0), D0'
+                        self.AddIntermediateCode(line)
 
                     self._current_token = self.get_next_token()
                     self.FunctionBody()
@@ -368,10 +394,12 @@ class Parser(object):
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    print 'LEA A0, ' + location.__str__() + '(PC)'
-                    print 'POP D0'
-                    print 'MOV (A0), D0'
-                    self._Line_Counter += 3
+                    line = 'LEA A0, ' + location.__str__() + '(PC)'
+                    self.AddIntermediateCode(line)
+                    line = 'POP D0'
+                    self.AddIntermediateCode(line)
+                    line = 'MOV (A0), D0'
+                    self.AddIntermediateCode(line)
                     self._current_token = self.get_next_token()
                 else:
                     errormsg = 'Expected a Semicolon ; but got some other token'
@@ -393,17 +421,23 @@ class Parser(object):
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.ADD_OPERATOR:
                 self._current_token = self.get_next_token()
                 self.Term()
-                print 'POP D1'
-                print 'POP D0'
-                print 'ADD D0, D1'
+                line = 'POP D1'
+                self.AddIntermediateCode(line)
+                line = 'POP D0'
+                self.AddIntermediateCode(line)
+                line =  'ADD D0, D1'
+                self.AddIntermediateCode(line)
             else:
                 self._current_token = self.get_next_token()
                 self.Term()
-                print 'POP D1'
-                print 'POP D0'
-                print 'SUB D0, D1'
-            print 'PUSH D0'
-            self._Line_Counter += 4
+                line = 'POP D1'
+                self.AddIntermediateCode(line)
+                line = 'POP D0'
+                self.AddIntermediateCode(line)
+                line = 'SUB D0, D1'
+                self.AddIntermediateCode(line)
+            line = 'PUSH D0'
+            self.AddIntermediateCode(line)
         return
 
     def SeqStatements(self):
@@ -442,8 +476,8 @@ class Parser(object):
                     self._current_token = self.get_next_token()
 
             self._current_token = self.get_next_token()
-            print 'CALL ' + function_call + ' ' + location.__str__()
-            self._Line_Counter += 1
+            line =  'CALL ' + function_call + ' ' + location.__str__()
+            self.AddIntermediateCode(line)
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.RETURN:
             self.HandleReturnStatement()
         else:
@@ -458,8 +492,8 @@ class Parser(object):
                 errorMsg = 'Expected a ;'
                 self.Error(errorMsg)
                 return
-        print 'ret'
-        self._Line_Counter += 1
+        line = 'ret'
+        self.AddIntermediateCode(line)
         self._current_token = self.get_next_token()
 
 
@@ -487,10 +521,12 @@ class Parser(object):
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    print 'LEA A0, ' + entry.symLocation.__str__() + '(PC)'
-                    print 'POP D0'
-                    print 'MOV (A0), D0'
-                    self._Line_Counter += 3
+                    line = 'LEA A0, ' + entry.symLocation.__str__() + '(PC)'
+                    self.AddIntermediateCode(line)
+                    line = 'POP D0'
+                    self.AddIntermediateCode(line)
+                    line = 'MOV (A0), D0'
+                    self.AddIntermediateCode(line)
                     self._current_token = self.get_next_token()
                 else:
                     errormsg = 'Expected a Semicolon ; but got some other token'
@@ -511,9 +547,10 @@ class Parser(object):
             endElselable = endIflabel
             self._current_token = self.get_next_token()
             self.Expression()
-            print 'POP D0'
-            print 'BEQ '+endIflabel
-            self._Line_Counter += 2
+            line =  'POP D0'
+            self.AddIntermediateCode(line)
+            line = 'BEQ '+endIflabel
+            self.AddIntermediateCode(line)
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
                 self._current_token = self.get_next_token()
                 if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
@@ -526,10 +563,10 @@ class Parser(object):
                         self._current_token = self.get_next_token()
                         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
                             endElselable = self.generate_labels('ELSE', 0)
-                            print 'JMP ' + endIflabel
-                            self._Line_Counter += 1
-                            print endIflabel + ':'
-                            self._Line_Counter += 1
+                            line = 'JMP ' + endIflabel
+                            self.AddIntermediateCode(line)
+                            line = endIflabel + ':'
+                            self.AddIntermediateCode(line)
                             self._current_token = self.get_next_token()
                             while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
                                 self.Statements()
@@ -538,8 +575,8 @@ class Parser(object):
                             errorMsg = 'Expected }'
                             self.Error(errorMsg)
 
-                    print endElselable + ':'
-                    self._Line_Counter += 1
+                    line = endElselable + ':'
+                    self.AddIntermediateCode(line)
                 else:
                     errorMsg = 'Expected {'
                     self.Error(errorMsg)
@@ -558,12 +595,13 @@ class Parser(object):
             endWhileLabel = self.generate_labels('WHILE', 0)
             startWhileLabel = self.generate_labels('WHILE', 1)
             self._current_token = self.get_next_token()
-            print startWhileLabel + ':'
-            self._Line_Counter += 1
+            line = startWhileLabel + ':'
+            self.AddIntermediateCode(line)
             self.Expression()
-            print 'POP D0'
-            print 'BEQ ' + endWhileLabel
-            self._Line_Counter += 2
+            line = 'POP D0'
+            self.AddIntermediateCode(line)
+            line = 'BEQ ' + endWhileLabel
+            self.AddIntermediateCode(line)
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.CLOSE_BRACE:
                 self._current_token = self.get_next_token()
                 if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEG_OPEN:
@@ -571,10 +609,10 @@ class Parser(object):
                     while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
                         self.Statements()
                     self._current_token = self.get_next_token()
-                    print 'JMP ' + startWhileLabel
-                    self._Line_Counter += 1
-                    print endWhileLabel + ':'
-                    self._Line_Counter += 1
+                    line = 'JMP ' + startWhileLabel
+                    self.AddIntermediateCode(line)
+                    line = endWhileLabel + ':'
+                    self.AddIntermediateCode(line)
                 else:
                     errorMsg = 'Expected {'
                     self.Error(errorMsg)
@@ -591,11 +629,14 @@ class Parser(object):
         while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.LOG_OR_OPERATOR:
             self._current_token = self.get_next_token()
             self.BTerm()
-            print 'POP D1'
-            print 'POP D0'
-            print 'OR D0, D1'
-            print 'PUSH D0'
-            self._Line_Counter += 4
+            line = 'POP D1'
+            self.AddIntermediateCode(line)
+            line = 'POP D0'
+            self.AddIntermediateCode(line)
+            line = 'OR D0, D1'
+            self.AddIntermediateCode(line)
+            line =  'PUSH D0'
+            self.AddIntermediateCode(line)
 
         return
 
@@ -607,22 +648,34 @@ class Parser(object):
             relop = self._current_token.Type_Of_Token
             self._current_token = self.get_next_token()
             self.Expression()
-            print 'POP D1'
-            print 'POP D0'
+            line = 'POP D1'
+            self.AddIntermediateCode(line)
+            line = 'POP D0'
+            self.AddIntermediateCode(line)
             if relop == Lex.Defined_Token_Types.NOTEQUAL_OPERATOR:
-                print 'CNE D0, D1'
+                line = 'CNE D0, D1'
+                self.AddIntermediateCode(line)
             elif relop == Lex.Defined_Token_Types.EQUALS_OPERATOR:
-                print 'CEQ D0,D1'
+                line = 'CEQ D0,D1'
+                self.AddIntermediateCode(line)
             elif relop == Lex.Defined_Token_Types.GREATERTHAN_OPERATOR:
-                print 'CGT D0,D1'
+                line = 'CGT D0,D1'
+                self.AddIntermediateCode(line)
             elif relop == Lex.Defined_Token_Types.GREATEREQUAL_OPERATOR:
-                print 'CGE D0,D1'
+                line = 'CGE D0,D1'
+                self.AddIntermediateCode(line)
             elif relop == Lex.Defined_Token_Types.LESSEREQUAL_OPERATOR:
-                print 'CLE D0,D1'
+                line = 'CLE D0,D1'
+                self.AddIntermediateCode(line)
+            elif relop == Lex.Defined_Token_Types.LESSERTHAN_OPERATOR:
+                line = 'CLT D0,D1'
+                self.AddIntermediateCode(line)
             else:
-                print 'CLT D0,D1'
-            print 'PUSH D0'
-            self._Line_Counter += 4
+                errorMsg = 'Invalid relation operator'
+                self.Error(errorMsg)
+                return
+            line = 'PUSH D0'
+            self.AddIntermediateCode(line)
         return
 
     def BTerm(self):
@@ -630,11 +683,14 @@ class Parser(object):
         while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.LOG_AND_OPERATOR:
             self._current_token = self.get_next_token()
             self.NotFactor()
-            print 'POP D1'
-            print 'POP D0'
-            print 'AND D0, D1'
-            print 'PUSH D0'
-            self._Line_Counter += 4
+            line = 'POP D1'
+            self.AddIntermediateCode(line)
+            line = 'POP D0'
+            self.AddIntermediateCode(line)
+            line = 'AND D0, D1'
+            self.AddIntermediateCode(line)
+            line = 'PUSH D0'
+            self.AddIntermediateCode(line)
         return
 
     def NotFactor(self):
@@ -653,18 +709,24 @@ class Parser(object):
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.MUL_OPERATOR:
                 self._current_token = self.get_next_token()
                 self.Factor()
-                print 'POP D1'
-                print 'POP D0'
-                print 'MUL D0, D1'
+                line = 'POP D1'
+                self.AddIntermediateCode(line)
+                line = 'POP D0'
+                self.AddIntermediateCode(line)
+                line = 'MUL D0, D1'
+                self.AddIntermediateCode(line)
 
             else:
                 self._current_token = self.get_next_token()
                 self.Factor()
-                print 'POP D1'
-                print 'POP D0'
-                print 'DIV D0, D1'
-            print 'PUSH D0'
-            self._Line_Counter += 4
+                line = 'POP D1'
+                self.AddIntermediateCode(line)
+                line = 'POP D0'
+                self.AddIntermediateCode(line)
+                line = 'DIV D0, D1'
+                self.AddIntermediateCode(line)
+            line = 'PUSH D0'
+            self.AddIntermediateCode(line)
 
         return
 
@@ -673,9 +735,10 @@ class Parser(object):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT:
             # This is a constant
             #movi A, value
-            print 'MOVI D0, ' + self._current_token.Value_Of_Token
-            print 'PUSH D0'
-            self._Line_Counter += 2
+            line = 'MOVI D0, ' + self._current_token.Value_Of_Token
+            self.AddIntermediateCode(line)
+            line = 'PUSH D0'
+            self.AddIntermediateCode(line)
             self._current_token = self.get_next_token()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
             next_token = self.peek_next_token()
@@ -701,10 +764,12 @@ class Parser(object):
                     errorMsg = 'Arguments number mismatch'
                     self.Error(errorMsg)
                     return
-                print 'CALL ' + function_call + ' ' + entry.symLocation.__str__()
-                print 'POP D0'
-                print 'PUSH D0'                                                                 #Return Value
-                self._Line_Counter += 3
+                line = 'CALL ' + function_call + ' ' + entry.symLocation.__str__()
+                self.AddIntermediateCode(line)
+                line = 'POP D0'
+                self.AddIntermediateCode(line)
+                line = 'PUSH D0'                                                                 #Return Value
+                self.AddIntermediateCode(line)
                 self._current_token = self.get_next_token()
             else:
                 if not self._curSymTable.searchTable(self._current_token.Value_Of_Token):
@@ -713,10 +778,12 @@ class Parser(object):
                     return
                 entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
 
-                print 'LEA A0, ' + entry._symLocation.__str__() + '(PC)'
-                print 'MOV D0, (A0)'
-                print 'PUSH D0'
-                self._Line_Counter += 3
+                line = 'LEA A0, ' + entry._symLocation.__str__() + '(PC)'
+                self.AddIntermediateCode(line)
+                line = 'MOV D0, (A0)'
+                self.AddIntermediateCode(line)
+                line = 'PUSH D0'
+                self.AddIntermediateCode(line)
                 self._current_token = self.get_next_token()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
             self._current_token = self.get_next_token()
@@ -735,10 +802,7 @@ class Parser(object):
         # self.SeqStatements()
         self._current_token = self.get_next_token()
         self.Program()
-        # self.SeqStatements()
-        # self.AssignmentStatement()
-        # self.SimpleExpression()
-        return
+
 
 
 
