@@ -22,7 +22,7 @@ def Parser_Tester(text_of_program):
 
 
 if __name__=='__main__':
-    filename = 'Input_1.txt'
+    filename = 'Input.txt'
     file = open(filename)
     characters = file.read()
     file.close()

@@ -7,6 +7,8 @@
 
 
 import BaSimPL_Lexxer as Lex
+import SymbolTable as syTable
+import Entry as entItem
 
 #####################################################################################################################
 #               GRAMMAR OF BaSimPL                                                                                  #
@@ -83,7 +85,9 @@ class Parser(object):
         self._List_Of_Tokens = []
         self._current_token = None
         self._Label_Counter = 0
-        self._Line_Counter = 0
+        self._Line_Counter = -1
+        self._globalTable = syTable.SymTable(None)
+        self._curSymTable = None
 
     @property
     def List_Of_Tokens(self):
@@ -122,22 +126,10 @@ class Parser(object):
 
         return label
 
-    # program -> topLevelDeclarations*
-# topLevelDeclaration -> functionDecl | GlobalDataDecl | globalAssignment
-# GlobalDecl -> TYPE_DECL declList SEMICOLON
-# DataDecl -> TYPE_DECL declList SEMI_COLON
-# functionDecl -> FUNCT_DEF funcReturnType ID OPEN_BRACE PARAMETER_LIST CLOSE_BRACE funBlock
-# funReturnType -> VOID | INT_TYPE
-# declList -> ID { COMA ID }
-# funBlock -> SEG_OPEN declRegion SEQSTATMENTS SEG_CLOSE
-# declRegion -> DataDecl*
-# globalAssignment -> ID ASSIGN_OPERATOR INT SEMI_COLON
-# PARAMETER_LIST -> TYPE_DECL ID { COMA TYPE_DECL ID }
-# TYPE_DECL -> INT_TYPE
-
     def Program(self):
         # while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.EOF:
         #    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+        # symTable = syTable.SymTable(None)
         while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.EOF:
             self.TopLevelDeclaration()
         return
@@ -162,15 +154,39 @@ class Parser(object):
             self._current_token = self.get_next_token()
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
                 # Allocate it in symbol table
+                if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                    errorMsg = 'Aldready a variable called ' + self._current_token.Value_Of_Token + ' is defined'
+                    self.Error(errorMsg)
+                    return
+
+                print 'ALOC VAR.' + self._current_token.Value_Of_Token
+                self._Line_Counter += 1
+                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
+
                 self._current_token = self.get_next_token()
-                while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                    self._current_token = self.get_next_token()
                     if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
-                        #Allocate it in symbol table
-                        x = 0
+                        if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                            errorMsg = 'Aldready a variable called ' + self._current_token.Value_Of_Token + ' is defined'
+                            self.Error(errorMsg)
+                            return
+
+                        print 'ALOC VAR.' + self._current_token.Value_Of_Token
+                        self._Line_Counter += 1
+                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                        self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
                     else:
                         errorMsg = 'expected an identifier'
                         self.Error(errorMsg)
                     self._current_token = self.get_next_token()
+
+                if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                    errorMsg = 'Expected a ;'
+                    self.Error(errorMsg)
+                    return
+                self._current_token = self.get_next_token()
             else:
                 errorMsg = 'Expected an identifier'
                 self.Error(errorMsg)
@@ -187,15 +203,38 @@ class Parser(object):
             self._current_token = self.get_next_token()
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
                 # Allocate it in symbol table
+                if self._curSymTable.searchCurrentTable(self._current_token.Value_Of_Token):
+                    errorMsg = 'A variable ' + self._current_token.Value_Of_Token + ' is already declared'
+                    self.Error(errorMsg)
+                    return
+                print 'ALOC VAR.' + self._current_token.Value_Of_Token
+                self._Line_Counter += 1
+                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
+
                 self._current_token = self.get_next_token()
-                while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                    self._current_token = self.get_next_token()
                     if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
                         #Allocate it in symbol table
-                        x = 0
+                        if self._curSymTable.searchCurrentTable(self._current_token.Value_Of_Token):
+                            errorMsg = 'A variable ' + self._current_token.Value_Of_Token + ' is already declared'
+                            self.Error(errorMsg)
+                            return
+                        print 'ALOC VAR.' + self._current_token.Value_Of_Token
+                        self._Line_Counter += 1
+                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'INT_VAR', None, None)
+                        self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
                     else:
                         errorMsg = 'expected an identifier'
                         self.Error(errorMsg)
                     self._current_token = self.get_next_token()
+
+                if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                    errorMsg = 'Expected a ;'
+                    self.Error(errorMsg)
+                    return
+                self._current_token = self.get_next_token()
             else:
                 errorMsg = 'Expected an identifier'
                 self.Error(errorMsg)
@@ -205,23 +244,79 @@ class Parser(object):
         return
 
     def FunctionDeclaration(self):
+        returnType = 0  # default trying to treat as void
+        functionName = ''
+        paramList = []
+        self._curSymTable = syTable.SymTable(self._globalTable)
+
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.VOID:
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.VOID:
                 # No return type So then dont allocate anyting.
-                x = 0
-            else:
+                returnType = 0
+            elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
                 # Function is going to return an integer value
-                x = 0
+                returnType = 1
+            else:
+                errorMsg = 'Invalid return type'
+                self.Error(errorMsg)
+                return
+
             self._current_token = self.get_next_token()
             if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
                 labelOfFunction = self.generate_labels('FUNCT', 1)
                 functionName = self._current_token.Value_Of_Token
+                labelOfFunction = labelOfFunction + '_' + functionName
+                if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                    errorMsg = 'Already a function/variable with name ' + functionName + ' exists'
+                    self.Error(errorMsg)
+                    return
                 self._current_token = self.get_next_token()
                 if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
                     self._current_token = self.get_next_token()
                     while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.CLOSE_BRACE:
                         #Handle Parameters
-                        x = 0
+                        paramType = 0
+                        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+                            paramType = 1
+                        else:
+                            errorMsg = 'Invalid Parameter Type'
+                            self.Error(errorMsg)
+                            return
+                        self._current_token = self.get_next_token()
+
+                        if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.IDENTIFIER:
+                            errorMsg = 'Expected an identifier'
+                            self.Error(errorMsg)
+                            return
+
+                        param = (paramType, self._current_token.Value_Of_Token)
+                        paramList.append(param)
+                        self._current_token = self.get_next_token()
+
+                        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                            self._current_token = self.get_next_token()
+
+                    print labelOfFunction + ':'
+                    self._Line_Counter += 1
+                    NewEntry = entItem.Entry(functionName, self._Line_Counter, 'FUNCT', None, returnType)
+                    NewEntry.symParamList = paramList
+                    self._globalTable.initEntry(functionName, NewEntry)
+                    for param in paramList:
+                        if self._curSymTable.searchCurrentTable(param[1]):
+                            errorMsg = 'Already parameter ' + param[1] + ' is defined'
+                            self.Error(errorMsg)
+                            return
+                        print 'ALOC VAR.' + param[1]
+                        self._Line_Counter += 1
+                        NewEntry = entItem.Entry(param[1], self._Line_Counter, 'VAR', None, None)
+                        self._curSymTable.initEntry(param[1], NewEntry)
+                        print 'POP D0'
+                        self._Line_Counter += 1
+                        print 'LEA A0, '+self._Line_Counter.__str__()+'(PC)'
+                        self._Line_Counter += 1
+                        print 'MOV (A0), D0'
+                        self._Line_Counter += 1
+
                     self._current_token = self.get_next_token()
                     self.FunctionBody()
                 else:
@@ -251,18 +346,29 @@ class Parser(object):
     def DeclRegion(self):
         while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
             self.DataDeclaration()
-            self._current_token = self.get_next_token()
+            # self._current_token = self.get_next_token()
         return
 
     def GlobalAssignment(self):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
             variable = self._current_token.Value_Of_Token
+            if not self._globalTable.searchTable(variable):
+                errorMsg = 'Variable ' + variable + ' is not yet declared'
+                self.Error(errorMsg)
+                return
+            entry = self._globalTable.getEntry(variable)
+            if entry is None:
+                errorMsg = 'Entry is None'
+                self.Error(errorMsg)
+                return
+
+            location = entry.symLocation
             self._current_token = self.get_next_token()
             if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.ASSIGNMENT_OPERATOR:
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    print 'LEA A0, ' + variable + '(PC)'
+                    print 'LEA A0, ' + location.__str__() + '(PC)'
                     print 'POP D0'
                     print 'MOV (A0), D0'
                     self._Line_Counter += 3
@@ -305,6 +411,8 @@ class Parser(object):
         while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
             self.Statements()
 
+        self._current_token = self.get_next_token()
+
         return
 
     def Statements(self):
@@ -319,14 +427,41 @@ class Parser(object):
         next_token = self.peek_next_token()
         if next_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
             function_call = self._current_token.Value_Of_Token
-            while self._current_token != Lex.Defined_Token_Types.CLOSE_BRACE:
-                self._current_token = self.get_next_token()
             self._current_token = self.get_next_token()
-            print 'CALL ' + function_call
+            if not self._globalTable.searchTable(function_call):
+                errorMsg = 'Function declaration not found'
+                self.Error(errorMsg)
+                return
+            location = self._globalTable.getEntry(function_call).symLocation
+            self._current_token = self.get_next_token()
+            nParamCount = 0
+            while self._current_token != Lex.Defined_Token_Types.CLOSE_BRACE:
+                self.Expression()
+                nParamCount += 1
+                if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                    self._current_token = self.get_next_token()
+
+            self._current_token = self.get_next_token()
+            print 'CALL ' + function_call + ' ' + location.__str__()
             self._Line_Counter += 1
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.RETURN:
+            self.HandleReturnStatement()
         else:
             self.AssignmentStatement()
         return
+
+    def HandleReturnStatement(self):
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+            self.Expression()
+            if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                errorMsg = 'Expected a ;'
+                self.Error(errorMsg)
+                return
+        print 'ret'
+        self._Line_Counter += 1
+        self._current_token = self.get_next_token()
+
 
     def CompoundStatement(self):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IF:
@@ -340,12 +475,19 @@ class Parser(object):
 
         if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
             variable = self._current_token.Value_Of_Token
+
+            if not self._curSymTable.searchTable(variable):
+                errorMsg = 'Variable ' + variable + ' is not declared'
+                self.Error(errorMsg)
+                return
+            entry = self._curSymTable.getEntry(variable)
+
             self._current_token = self.get_next_token()
             if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.ASSIGNMENT_OPERATOR:
                 self._current_token = self.get_next_token()
                 self.Expression()
                 if self._current_token is not None and self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
-                    print 'LEA A0, ' + variable + '(PC)'
+                    print 'LEA A0, ' + entry.symLocation.__str__() + '(PC)'
                     print 'POP D0'
                     print 'MOV (A0), D0'
                     self._Line_Counter += 3
@@ -387,6 +529,7 @@ class Parser(object):
                             print 'JMP ' + endIflabel
                             self._Line_Counter += 1
                             print endIflabel + ':'
+                            self._Line_Counter += 1
                             self._current_token = self.get_next_token()
                             while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEG_CLOSE:
                                 self.Statements()
@@ -396,6 +539,7 @@ class Parser(object):
                             self.Error(errorMsg)
 
                     print endElselable + ':'
+                    self._Line_Counter += 1
                 else:
                     errorMsg = 'Expected {'
                     self.Error(errorMsg)
@@ -415,6 +559,7 @@ class Parser(object):
             startWhileLabel = self.generate_labels('WHILE', 1)
             self._current_token = self.get_next_token()
             print startWhileLabel + ':'
+            self._Line_Counter += 1
             self.Expression()
             print 'POP D0'
             print 'BEQ ' + endWhileLabel
@@ -429,6 +574,7 @@ class Parser(object):
                     print 'JMP ' + startWhileLabel
                     self._Line_Counter += 1
                     print endWhileLabel + ':'
+                    self._Line_Counter += 1
                 else:
                     errorMsg = 'Expected {'
                     self.Error(errorMsg)
@@ -535,15 +681,39 @@ class Parser(object):
             next_token = self.peek_next_token()
             if next_token.Type_Of_Token == Lex.Defined_Token_Types.OPEN_BRACE:
                 # print 'PUSH $RA'
+
                 function_call = self._current_token.Value_Of_Token
+                self._current_token = self.get_next_token()
+                if not self._globalTable.searchTable(function_call):
+                    errorMsg = 'Function '+ function_call + ' is not declared'
+                    self.Error(errorMsg)
+                    return
+                nCount = 0
+                entry = self._curSymTable.getEntry(function_call)
+                self._current_token = self.get_next_token()
                 while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.CLOSE_BRACE:
-                    self._current_token = self.get_next_token()
-                print 'CALL ' + function_call
+                    self.Expression()
+                    nCount += 1
+                    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                        self._current_token = self.get_next_token()
+
+                if nCount != entry.symParamList.__len__():
+                    errorMsg = 'Arguments number mismatch'
+                    self.Error(errorMsg)
+                    return
+                print 'CALL ' + function_call + ' ' + entry.symLocation.__str__()
+                print 'POP D0'
                 print 'PUSH D0'                                                                 #Return Value
-                self._Line_Counter += 2
+                self._Line_Counter += 3
                 self._current_token = self.get_next_token()
             else:
-                print 'LEA A0, ' + self._current_token.Value_Of_Token + '(PC)'
+                if not self._curSymTable.searchTable(self._current_token.Value_Of_Token):
+                    errorMsg = 'variable ' + self._current_token.Value_Of_Token + ' is not declared'
+                    self.Error(errorMsg)
+                    return
+                entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
+
+                print 'LEA A0, ' + entry._symLocation.__str__() + '(PC)'
                 print 'MOV D0, (A0)'
                 print 'PUSH D0'
                 self._Line_Counter += 3
@@ -564,7 +734,8 @@ class Parser(object):
     def ParseIt(self):
         # self.SeqStatements()
         self._current_token = self.get_next_token()
-        self.SeqStatements()
+        self.Program()
+        # self.SeqStatements()
         # self.AssignmentStatement()
         # self.SimpleExpression()
         return
