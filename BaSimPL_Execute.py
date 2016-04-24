@@ -34,7 +34,7 @@ def Interpreter_Test(file_name, debug=0, outputfile='intermediate.bspl'):
     Basimplcc.OutputIntermediateFile = outputfile
     Basimplcc.generate_intermediate_file()
     Basimplip = runTime.DummyRunTime(Basimplcc.OutputIntermediateFile)
-    Basimplip.DebugFlag = 1
+    Basimplip.DebugFlag = debug
     Basimplip.executecode()
 
 
@@ -55,7 +55,12 @@ if __name__=='__main__':
     # text = '( n / 2 ) * 345 + 34 - ( 4 + 5 ) * 123'
     # Parser_Tester(characters)
     # Compiler_Tester(filename)
-    Interpreter_Test(inFile1, 1, outFile1)
-    Interpreter_Test(inFile2, 1, outFile2)
-    Interpreter_Test(inFile3, 1, outFile3)
+
+    #Interpreter_Test(inFile1, 1, outFile1)
+    #Interpreter_Test(inFile2, 1, outFile2)
+    #Interpreter_Test(inFile3, 1, outFile3)
+
+    Interpreter_Test(inFile1, 0, outFile1)
+    Interpreter_Test(inFile2, 0, outFile2)
+    Interpreter_Test(inFile3, 0, outFile3)
     str = 'done'

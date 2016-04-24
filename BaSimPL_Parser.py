@@ -472,15 +472,24 @@ class Parser(object):
             location = self._globalTable.getEntry(function_call).symLocation
             self._current_token = self.get_next_token()
             nParamCount = 0
-            while self._current_token != Lex.Defined_Token_Types.CLOSE_BRACE:
+            while self._current_token.Type_Of_Token != Lex.Defined_Token_Types.CLOSE_BRACE:
                 self.Expression()
                 nParamCount += 1
                 if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
                     self._current_token = self.get_next_token()
 
-            self._current_token = self.get_next_token()
             line =  'CALL ' + function_call + ' ' + location.__str__()
             self.AddIntermediateCode(line)
+
+            self._current_token = self.get_next_token()
+
+            if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                errorMsg = 'Expected a ;'
+                self.Error(errorMsg)
+                return;
+
+            self._current_token = self.get_next_token()
+
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.RETURN:
             self.HandleReturnStatement()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INPUT:
