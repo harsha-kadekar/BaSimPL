@@ -43,10 +43,12 @@ if __name__=='__main__':
     inFile1 = 'factorial_iterative.smpl'
     inFile2 = 'factorial_recursive.smpl'
     inFile3 = 'hemachandra_fibonacci.smpl'
+    inFile4 = 'sum_of_n.smpl'
 
     outFile1 = 'factorial_iterative.bspl'
     outFile2 = 'factorial_recursive.bspl'
     outFile3 = 'hemachandra_fibonacci.bspl'
+    outFile4 = 'sum_of_n.bspl'
 
     # file = open(filename)
     # characters = file.read()
@@ -59,8 +61,10 @@ if __name__=='__main__':
     #Interpreter_Test(inFile1, 1, outFile1)
     #Interpreter_Test(inFile2, 1, outFile2)
     #Interpreter_Test(inFile3, 1, outFile3)
+    #Interpreter_Test(inFile4, 1, outFile4)
 
     Interpreter_Test(inFile1, 0, outFile1)
     Interpreter_Test(inFile2, 0, outFile2)
     Interpreter_Test(inFile3, 0, outFile3)
+    Interpreter_Test(inFile4, 0, outFile4)
     str = 'done'

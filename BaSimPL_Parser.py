@@ -533,13 +533,13 @@ class Parser(object):
             line = 'POP D0'
             self.AddIntermediateCode(line)
 
-            line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            line = 'LEA A0,' + entry.symLocation.__str__()+'(PC+ST)'
             self.AddIntermediateCode(line)
 
             line = 'PUSHST (A0), D0'
             self.AddIntermediateCode(line)
 
-            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
                 self._current_token  = self.get_next_token()
             else:
                 errorMsg = 'Expecting a ;'
@@ -569,7 +569,7 @@ class Parser(object):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.EMPTYSTACK:
             self._current_token = self.get_next_token()
 
-            line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            line = 'LEA A0,' + entry.symLocation.__str__()+'(PC+ST)'
             self.AddIntermediateCode(line)
 
             line = 'STEMPTY (A0), D0'
@@ -580,7 +580,7 @@ class Parser(object):
                 self.Error(errorMsg)
                 return
 
-            if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+            if not self._globalTable.searchTable(self._current_token.Value_Of_Token):
                 errorMsg = 'Identifier ' + self._current_token.Value_Of_Token + ' is not declared'
                 self.Error(errorMsg)
                 return
@@ -625,7 +625,7 @@ class Parser(object):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.POP:
             self._current_token = self.get_next_token()
 
-            line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            line = 'LEA A0,' + entry.symLocation.__str__()+'(PC+ST)'
             self.AddIntermediateCode(line)
 
             line = 'POPST (A0), D0'
@@ -655,7 +655,7 @@ class Parser(object):
 
             self._current_token = self.get_next_token()
 
-            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
                 self._current_token  = self.get_next_token()
             else:
                 errorMsg = 'Expecting a ;'
@@ -780,15 +780,15 @@ class Parser(object):
             self.AddIntermediateCode(line)
 
             if entry.symGlobalOrLocal == 0:
-                line = 'LEA A0,' + entry.symlocation.__str__()+'(FP+ST)'
+                line = 'LEA A0,' + entry.symLocation.__str__()+'(FP+ST)'
             else:
-                line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+                line = 'LEA A0,' + entry.symLocation.__str__()+'(PC+ST)'
             self.AddIntermediateCode(line)
 
             line = 'PUSHST (A0), D0'
             self.AddIntermediateCode(line)
 
-            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
                 self._current_token  = self.get_next_token()
             else:
                 errorMsg = 'Expecting a ;'
@@ -832,7 +832,7 @@ class Parser(object):
                 self.Error(errorMsg)
                 return
 
-            if self._curSymTable.searchTable(self._current_token.Value_Of_Token):
+            if not self._curSymTable.searchTable(self._current_token.Value_Of_Token):
                 errorMsg = 'Identifier ' + self._current_token.Value_Of_Token + ' is not declared'
                 self.Error(errorMsg)
                 return
@@ -881,9 +881,9 @@ class Parser(object):
             self._current_token = self.get_next_token()
 
             if entry.symGlobalOrLocal == 1:
-                line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+                line = 'LEA A0,' + entry.symLocation.__str__()+'(PC+ST)'
             else:
-                line = 'LEA A0,' + entry.symlocation.__str__()+'(FP+ST)'
+                line = 'LEA A0,' + entry.symLocation.__str__()+'(FP+ST)'
             self.AddIntermediateCode(line)
 
             line = 'POPST (A0), D0'
@@ -911,7 +911,7 @@ class Parser(object):
 
             self._current_token = self.get_next_token()
 
-            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
                 self._current_token  = self.get_next_token()
             else:
                 errorMsg = 'Expecting a ;'
