@@ -100,7 +100,7 @@ class DummyRunTime(object):
                 localvariable.__setitem__(ip - fp, 0)
 
             ip += 1
-        if opcode == 'ALOCSTACK':
+        elif opcode == 'ALOCSTACK':
             if splitInst[1].__contains__('GLB'):
                 newStack = []
                 self._globalStacks.__setitem__(ip, newStack)
@@ -244,6 +244,8 @@ class DummyRunTime(object):
             NewFrame = {}
             self._frames.insert(0, NewFrame)
             self._framePointer.insert(0, ip - 1)
+            NewStacks = {}
+            self._localStacks.insert(0, NewStacks)
         elif opcode == 'ret':
             ip = self._returnAddress[0]
             self._returnAddress.__delitem__(0)

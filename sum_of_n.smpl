@@ -1,0 +1,46 @@
+Stack numbers;
+
+funct int CalculateSum()
+{
+    int nReturnValue = 0;
+
+    int bValue = 0;
+    int nValue = 0;
+    int nSum = 0;
+
+    numbers empty bValue;
+    while( bValue != 0)
+    {
+        numbers pop nValue;
+        nSum = nSum + nValue;
+        numbers empty bValue;
+    }
+
+    return nReturnValue;
+}
+
+funct void main()
+{
+    int nInput = 0;
+    int nSum = 0;
+    int nValue = 0;
+
+    while(nInput <= 0 )
+    {
+        in nInput;
+    }
+
+    while( nInput > 0 )
+    {
+        in nValue;
+        numbers push nValue;
+        nInput = nInput - 1;
+    }
+
+    nSum = CalculateSum();
+
+    out nSum;
+
+    return;
+
+}
