@@ -65,6 +65,11 @@ class Defined_Token_Types(object):
     RETURN = 'FUN_RETURN'
     INPUT = 'CONSOLE_INPUT'
     OUTPUT = 'CONSOLE_OUTPUT'
+    PUSH = 'STACK_PUSH'
+    POP = 'STACK_POP'
+    EMPTYSTACK = 'STACK_EMPTY'
+    BOOLEAN = 'BOOLEAN'
+    STACK_TYPE = 'STACK_TYPE'
 
 
 # Name: Lexxer
@@ -100,9 +105,14 @@ class Lexxer(object):
             (r'funct', Defined_Token_Types.FUNCTION_DEFINITION),
             (r'void', Defined_Token_Types.VOID),
             (r'int', Defined_Token_Types.INT_TYPE),
+            (r'bool', Defined_Token_Types.BOOLEAN),
+            (r'stack', Defined_Token_Types.STACK_TYPE),
             (r'return', Defined_Token_Types.RETURN),
             (r'in', Defined_Token_Types.INPUT),
             (r'out', Defined_Token_Types.OUTPUT),
+            (r'push', Defined_Token_Types.PUSH),
+            (r'pop', Defined_Token_Types.POP),
+            (r'empty', Defined_Token_Types.EMPTYSTACK),
             (r'[0-9]+', Defined_Token_Types.INT),
             (r'[A-Za-z][A-Za-z0-9_]*', Defined_Token_Types.IDENTIFIER),
             (r',', Defined_Token_Types.COMMA)

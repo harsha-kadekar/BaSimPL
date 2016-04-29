@@ -29,7 +29,7 @@ import Entry as entItem
 
 # SEQSTATEMENTS -> STATEMENT {STATEMENT}
 # STATEMENT -> simpleSTATEMENT | compoundSTATEMENT
-# simpleSTATEMENT -> assignmentSTATEMENT | procedureSTATEMENT | returnStatement
+# simpleSTATEMENT -> assignmentSTATEMENT | procedureSTATEMENT | returnStatement | pushStatement | popStatement
 # compoundSTATEMENT -> ifSTATEMENT | whileSTATEMENT
 # assignmentSTATEMENT -> ID ASSIGNT_OPERATOR expression SEMI_COLON
 # ifSTATEMENT -> IF OPEN_BRACE expression CLOSE_BRACE SEG_OPEN SEQSTATEMENTS SEG_CLOSE {ELSE SEG_OPEN SEQSTATEMENTS SEG_CLOSE}
@@ -71,6 +71,10 @@ import Entry as entItem
 # INT_TYPE -> "int"
 # COMMA -> ","
 # FUN_RETURN -> "return"
+# pushStatement -> ID STACK_PUSH Expression
+# popStatement -> ID STACK_POP ID
+# STACK_PUSH -> push
+# STACK_POP -> pop
 
 #####################################################################################################################
 #####################################################################################################################
@@ -164,14 +168,24 @@ class Parser(object):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.FUNCTION_DEFINITION:
             self._current_token = self.get_next_token()
             self.FunctionDeclaration()
-        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE or self._current_token.Type_Of_Token == Lex.Defined_Token_Types.STACK_TYPE:
             self.GlobalDataDeclaration()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
-            self.GlobalAssignment()
+            nextToken = self.peek_next_token()
+            if nextToken.Type_Of_Token == Lex.Defined_Token_Types.PUSH:
+                self.GlobalPushStatement()
+            elif nextToken.Type_Of_Token == Lex.Defined_Token_Types.POP:
+                self.GlobalPopStatement()
+            elif nextToken.Type_Of_Token == Lex.Defined_Token_Types.EMPTYSTACK:
+                self.GlobalStackEmptyStatement()
+            else:
+                self.GlobalAssignment()
         else:
             errorMsg = 'Invalid token - Should have been a global declaration, global assignment or function'
             self.Error(errorMsg)
         return
+
+
 
     def GlobalDataDeclaration(self):
         if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.INT_TYPE:
@@ -216,6 +230,46 @@ class Parser(object):
             else:
                 errorMsg = 'Expected an identifier'
                 self.Error(errorMsg)
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.STACK_TYPE:
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                    errorMsg = 'Already a variable called ' + self._current_token.Value_Of_Token + ' is defined'
+                    self.Error(errorMsg)
+                    return
+                line = 'ALOCSTACK GLB.' + self._current_token.Value_Of_Token
+                self.AddIntermediateCode(line)
+                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'STACK_VAR', None, None, 1)
+                self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
+
+                self._current_token = self.get_next_token()
+                while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                    self._current_token = self.get_next_token()
+                    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                        if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                            errorMsg = 'Already a variable called ' + self._current_token.Value_Of_Token + ' is defined'
+                            self.Error(errorMsg)
+                            return
+
+                        line = 'ALOCSTACK GLB.' + self._current_token.Value_Of_Token
+                        self.AddIntermediateCode(line)
+                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'STACK_VAR', None, None, 1)
+                        self._globalTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
+                    else:
+                        errorMsg = 'Expected an identifier'
+                        self.Error(errorMsg)
+                        return
+                    self._current_token = self.get_next_token()
+
+                if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                    errorMsg = 'Expected a ;'
+                    self.Error(errorMsg)
+                    return
+                self._current_token = self.get_next_token()
+            else:
+                errorMsg = 'Expected an identifier'
+                self.Error(errorMsg)
+                return
         else:
             errorMsg = 'Invalid type'
             self.Error(errorMsg)
@@ -264,6 +318,47 @@ class Parser(object):
             else:
                 errorMsg = 'Expected an identifier'
                 self.Error(errorMsg)
+                return
+        elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.STACK_TYPE:
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                if self._curSymTable.searchCurrentTable(self._current_token.Value_Of_Token):
+                    errorMsg = 'Already a variable called ' + self._current_token.Value_Of_Token + ' is defined'
+                    self.Error(errorMsg)
+                    return
+                line = 'ALOCSTACK LCB.' + self._current_token.Value_Of_Token
+                self.AddIntermediateCode(line)
+                NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'STACK_VAR', None, None, 0)
+                self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
+
+                self._current_token = self.get_next_token()
+                while self._current_token.Type_Of_Token == Lex.Defined_Token_Types.COMMA:
+                    self._current_token = self.get_next_token()
+                    if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.IDENTIFIER:
+                        if self._curSymTable.searchCurrentTable(self._current_token.Value_Of_Token):
+                            errorMsg = 'Already a variable called ' + self._current_token.Value_Of_Token + ' is defined'
+                            self.Error(errorMsg)
+                            return
+
+                        line = 'ALOCSTACK LCB.' + self._current_token.Value_Of_Token
+                        self.AddIntermediateCode(line)
+                        NewEntry = entItem.Entry(self._current_token.Value_Of_Token, self._Line_Counter, 'STACK_VAR', None, None, 0)
+                        self._curSymTable.initEntry(self._current_token.Value_Of_Token, NewEntry)
+                    else:
+                        errorMsg = 'Expected an identifier'
+                        self.Error(errorMsg)
+                        return
+                    self._current_token = self.get_next_token()
+
+                if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
+                    errorMsg = 'Expected a ;'
+                    self.Error(errorMsg)
+                    return
+                self._current_token = self.get_next_token()
+            else:
+                errorMsg = 'Expected an identifier'
+                self.Error(errorMsg)
+                return
         else:
             errorMsg = 'Invalid type'
             self.Error(errorMsg)
@@ -416,6 +511,162 @@ class Parser(object):
 
         return
 
+    def GlobalPushStatement(self):
+        stackVariable = self._current_token.Value_Of_Token
+
+        if not self._globalTable.searchTable(stackVariable):
+            errorMsg = stackVariable + ' stack variable is not defined'
+            self.Error(errorMsg)
+            return
+
+        entry = self._globalTable.getEntry(stackVariable)
+        if entry.symType != 'STACK_VAR':
+            errorMsg = 'stack variable expected. ' + stackVariable + ' is not stack'
+            self.Error(errorMsg)
+            return
+
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.PUSH:
+            self._current_token = self.get_next_token()
+            self.Expression()
+            line = 'POP D0'
+            self.AddIntermediateCode(line)
+
+            line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            self.AddIntermediateCode(line)
+
+            line = 'PUSHST (A0), D0'
+            self.AddIntermediateCode(line)
+
+            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+                self._current_token  = self.get_next_token()
+            else:
+                errorMsg = 'Expecting a ;'
+                self.AddIntermediateCode(errorMsg)
+                return
+        else:
+            errorMsg = 'expecting PUSH operator'
+            self.Error(errorMsg)
+            return
+        return
+
+    def GlobalStackEmptyStatement(self):
+        stackVariable = self._current_token.Value_Of_Token
+
+        if not self._globalTable.searchTable(stackVariable):
+            errorMsg = 'Stack variable ' + stackVariable + ' not declared'
+            self.Error(errorMsg)
+            return
+
+        entry = self._globalTable.getEntry(stackVariable)
+        if entry.symType != 'STACK_VAR':
+            errorMsg = stackVariable + ' is not a stack variable'
+            self.Error(errorMsg)
+            return
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.EMPTYSTACK:
+            self._current_token = self.get_next_token()
+
+            line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            self.AddIntermediateCode(line)
+
+            line = 'STEMPTY (A0), D0'
+            self.AddIntermediateCode(line)
+
+            if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.IDENTIFIER:
+                errorMsg = 'Identifier expected after Stack empty condition'
+                self.Error(errorMsg)
+                return
+
+            if self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                errorMsg = 'Identifier ' + self._current_token.Value_Of_Token + ' is not declared'
+                self.Error(errorMsg)
+                return
+
+            entry = self._globalTable.getEntry(self._current_token.Value_Of_Token)
+            if entry.symType != 'INT_VAR' and entry.symType != 'BOOL_VAR':
+                errorMsg = 'expected an int or bool variable'
+                self.Error(errorMsg)
+                return
+
+            line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+            self.AddIntermediateCode(line)
+
+            line = 'MOV (A0), D0'
+            self.AddIntermediateCode(line)
+
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
+                self._current_token = self.get_next_token()
+            else:
+                errorMsg = 'expected a ;'
+                self.Error(errorMsg)
+                return
+        return
+
+    def GlobalPopStatement(self):
+        stackVariable = self._current_token.Value_Of_Token
+
+        if not self._globalTable.searchTable(stackVariable):
+            errorMsg = stackVariable + ' stack variable is not defined'
+            self.Error(errorMsg)
+            return
+
+        entry = self._globalTable.getEntry(stackVariable)
+        if entry.symType != 'STACK_VAR':
+            errorMsg = 'stack variable expected. ' + stackVariable + ' is not stack'
+            self.Error(errorMsg)
+            return
+
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.POP:
+            self._current_token = self.get_next_token()
+
+            line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            self.AddIntermediateCode(line)
+
+            line = 'POPST (A0), D0'
+            self.AddIntermediateCode(line)
+
+            if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.IDENTIFIER:
+                errorMsg = 'Expecting an identifier'
+                self.Error(errorMsg)
+                return
+
+            if not self._globalTable.searchTable(self._current_token.Value_Of_Token):
+                errorMsg = self._current_token.Value_Of_Token + ' variable is not declared'
+                self.Error(errorMsg)
+                return
+
+            entry = self._globalTable.getEntry(self._current_token.Value_Of_Token)
+            if entry.symType != 'INT_VAR':
+                errorMsg = self._current_token.Value_Of_Token + ' is not an int variable'
+                self.Error(errorMsg)
+                return
+
+            line = 'LEA A0,' + entry.symLocation.__str__()+'(PC)'
+            self.AddIntermediateCode(line)
+
+            line = 'MOV (A0),D0'
+            self.AddIntermediateCode(line)
+
+            self._current_token = self.get_next_token()
+
+            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+                self._current_token  = self.get_next_token()
+            else:
+                errorMsg = 'Expecting a ;'
+                self.AddIntermediateCode(errorMsg)
+                return
+        else:
+            errorMsg = 'expecting PUSH operator'
+            self.Error(errorMsg)
+            return
+        return
+
     def SimpleExpression(self):
         self.Term()
         # print 'MOV D0, D1'
@@ -486,7 +737,7 @@ class Parser(object):
             if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.SEMICOLON:
                 errorMsg = 'Expected a ;'
                 self.Error(errorMsg)
-                return;
+                return
 
             self._current_token = self.get_next_token()
 
@@ -496,8 +747,180 @@ class Parser(object):
             self.HandleInputStatement()
         elif self._current_token.Type_Of_Token == Lex.Defined_Token_Types.OUTPUT:
             self.HandleOutputStatement()
+        elif next_token.Type_Of_Token == Lex.Defined_Token_Types.PUSH:
+            self.PushStatement()
+        elif next_token.Type_Of_Token == Lex.Defined_Token_Types.POP:
+            self.PopStatement()
+        elif next_token.Type_Of_Token == Lex.Defined_Token_Types.EMPTYSTACK:
+            self.StackEmptyStatement()
         else:
             self.AssignmentStatement()
+        return
+
+    def PushStatement(self):
+        stackVariable = self._current_token.Value_Of_Token
+
+        if not self._curSymTable.searchTable(stackVariable):
+            errorMsg = stackVariable + ' stack variable is not defined'
+            self.Error(errorMsg)
+            return
+
+        entry = self._curSymTable.getEntry(stackVariable)
+        if entry.symType != 'STACK_VAR':
+            errorMsg = 'stack variable expected. ' + stackVariable + ' is not stack'
+            self.Error(errorMsg)
+            return
+
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.PUSH:
+            self._current_token = self.get_next_token()
+            self.Expression()
+            line = 'POP D0'
+            self.AddIntermediateCode(line)
+
+            if entry.symGlobalOrLocal == 0:
+                line = 'LEA A0,' + entry.symlocation.__str__()+'(FP+ST)'
+            else:
+                line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            self.AddIntermediateCode(line)
+
+            line = 'PUSHST (A0), D0'
+            self.AddIntermediateCode(line)
+
+            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+                self._current_token  = self.get_next_token()
+            else:
+                errorMsg = 'Expecting a ;'
+                self.AddIntermediateCode(errorMsg)
+                return
+        else:
+            errorMsg = 'expecting PUSH operator'
+            self.Error(errorMsg)
+            return
+        return
+
+    def StackEmptyStatement(self):
+        stackVariable = self._current_token.Value_Of_Token
+
+        if not self._curSymTable.searchTable(stackVariable):
+            errorMsg = 'Stack variable ' + stackVariable + ' not declared'
+            self.Error(errorMsg)
+            return
+
+        entry = self._curSymTable.getEntry(stackVariable)
+        if entry.symType != 'STACK_VAR':
+            errorMsg = stackVariable + ' is not a stack variable'
+            self.Error(errorMsg)
+            return
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.EMPTYSTACK:
+            self._current_token = self.get_next_token()
+
+            if entry.symGlobalOrLocal == 1:
+                line = 'LEA A0,' + entry.symLocation.__str__()+'(PC+ST)'
+            else:
+                line = 'LEA A0,' + entry.symLocation.__str__() + '(FP+ST)'
+            self.AddIntermediateCode(line)
+
+            line = 'STEMPTY (A0), D0'
+            self.AddIntermediateCode(line)
+
+            if self._current_token.Type_Of_Token != Lex.Defined_Token_Types.IDENTIFIER:
+                errorMsg = 'Identifier expected after Stack empty condition'
+                self.Error(errorMsg)
+                return
+
+            if self._curSymTable.searchTable(self._current_token.Value_Of_Token):
+                errorMsg = 'Identifier ' + self._current_token.Value_Of_Token + ' is not declared'
+                self.Error(errorMsg)
+                return
+
+            entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
+            if entry.symType != 'INT_VAR' and entry.symType != 'BOOL_VAR':
+                errorMsg = 'expected an int or bool variable'
+                self.Error(errorMsg)
+                return
+
+            if entry.symGlobalOrLocal == 1:
+                line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+            else:
+                line = 'LEA A0,' + entry.symLocation.__str__() + '(FP)'
+            self.AddIntermediateCode(line)
+
+            line = 'MOV (A0), D0'
+            self.AddIntermediateCode(line)
+
+            self._current_token = self.get_next_token()
+            if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.SEMICOLON:
+                self._current_token = self.get_next_token()
+            else:
+                errorMsg = 'expected a ;'
+                self.Error(errorMsg)
+                return
+        return
+
+    def PopStatement(self):
+        stackVariable = self._current_token.Value_Of_Token
+
+        if not self._curSymTable.searchTable(stackVariable):
+            errorMsg = stackVariable + ' stack variable is not defined'
+            self.Error(errorMsg)
+            return
+
+        entry = self._curSymTable.getEntry(stackVariable)
+        if entry.symType != 'STACK_VAR':
+            errorMsg = 'stack variable expected. ' + stackVariable + ' is not stack'
+            self.Error(errorMsg)
+            return
+
+
+        self._current_token = self.get_next_token()
+        if self._current_token.Type_Of_Token == Lex.Defined_Token_Types.POP:
+            self._current_token = self.get_next_token()
+
+            if entry.symGlobalOrLocal == 1:
+                line = 'LEA A0,' + entry.symlocation.__str__()+'(PC+ST)'
+            else:
+                line = 'LEA A0,' + entry.symlocation.__str__()+'(FP+ST)'
+            self.AddIntermediateCode(line)
+
+            line = 'POPST (A0), D0'
+            self.AddIntermediateCode(line)
+
+            if not self._curSymTable.searchTable(self._current_token.Value_Of_Token):
+                errorMsg = self._current_token.Value_Of_Token + ' is not declared'
+                self.Error(errorMsg)
+                return
+
+            entry = self._curSymTable.getEntry(self._current_token.Value_Of_Token)
+            if entry.symType != 'INT_VAR':
+                errorMsg = self._current_token.Value_Of_Token + ' is not an int variable'
+                self.Error(errorMsg)
+                return
+
+            if entry.symGlobalOrLocal == 1:
+                line = 'LEA A0,' + entry.symLocation.__str__() + '(PC)'
+            else:
+                line = 'LEA A0,' + entry.symLocation.__str__() + '(FP)'
+            self.AddIntermediateCode(line)
+
+            line = 'MOV (A0),D0'
+            self.AddIntermediateCode(line)
+
+            self._current_token = self.get_next_token()
+
+            if self._current_token == Lex.Defined_Token_Types.SEMICOLON:
+                self._current_token  = self.get_next_token()
+            else:
+                errorMsg = 'Expecting a ;'
+                self.AddIntermediateCode(errorMsg)
+                return
+        else:
+            errorMsg = 'expecting PUSH operator'
+            self.Error(errorMsg)
+            return
         return
 
     def HandleReturnStatement(self):
