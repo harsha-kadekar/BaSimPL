@@ -1,0 +1,86 @@
+int avg, max, min, sum;
+
+funct int summation(int m, int n, int p)
+{
+    int sum;
+
+    sum = m + n + p;
+
+    return sum;
+
+}
+
+funct int average(int m, int n, int p)
+{
+    int avg;
+    avg = summation(m, n, p);
+    avg = avg/3;
+
+    return avg;
+}
+
+funct int maximum(int m, int n, int p)
+{
+
+    int max;
+    if( m > n and m > p)
+    {
+        max = m;
+    }
+    else
+    {
+        if( n > m and n > p )
+        {
+            max = n;
+        }
+        else
+        {
+            max = p;
+        }
+    }
+
+    return max;
+
+}
+
+funct int minimum(int m, int n, int p)
+{
+    int min;
+    if( m < n and m < p)
+    {
+        min = m;
+
+    }
+    else
+    {
+        if(n < m and n < p)
+        {
+            min = n;
+        }
+        else
+        {
+            min = p;
+        }
+    }
+
+    return min;
+}
+
+
+funct void main()
+{
+    int m, n, p;
+    in m;
+    in n;
+    in p;
+
+    avg = average( m, n, p);
+    max = maximum( m, n, p);
+    min = minimum( m, n, p);
+    sum = summation( m, n, p);
+
+    out avg;
+    out max;
+    out min;
+    out sum;
+}
