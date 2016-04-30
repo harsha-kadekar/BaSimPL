@@ -51,6 +51,7 @@ class Compiler(object):
         if self._text == '':
             self.readinputfile()
         lexAnalysis = Lex.Lexxer(self._text)
+        lexAnalysis.DebugMode = self._debug
         lexAnalysis.generate_Tokens()
         self._List_Of_Tokens = lexAnalysis.List_Of_Generated_Tokens
 

@@ -106,7 +106,7 @@ class SimpleInterpreter(object):
 
     def interpret(self):
         if self._inputFile == '':
-            print 'ERROR:: No input program file is provided. USAGE:: BaSimpPL_Execute inputfile=filename.smpl debug=1 outputfile=bytecodefilename.bspl'
+            print 'ERROR:: No input program file is provided. USAGE:: BaSimpPL_Execute.py inputfile=filename.smpl debug=1 outputfile=bytecodefilename.bspl'
             return
         else:
             outputFile = ''

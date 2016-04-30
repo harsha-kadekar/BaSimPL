@@ -77,6 +77,7 @@ class Defined_Token_Types(object):
 class Lexxer(object):
     def __init__(self, text):
         self._text = text
+        self._debug = 0
         self.Tokens_Expression = [
             (r'[ \n\t]+', None),
             (r'\\[^\n]*', None),
@@ -127,6 +128,14 @@ class Lexxer(object):
     def Text_Of_Language(self):
         return self._text
 
+    @property
+    def DebugMode(self):
+        return self._debug
+
+    @DebugMode.setter
+    def DebugMode(self, value):
+        self._debug = value
+
     @Text_Of_Language.setter
     def Text_Of_Language(self, text):
         self._text = text
@@ -149,6 +158,8 @@ class Lexxer(object):
                     if tag:
                         token = Token(tag, text)
                         self._List_Of_Generated_Tokens.append(token)
+                        if self._debug == 1:
+                            print '[TOKEN TYPE: ' + token.Type_Of_Token.__str__() + ' ][TOKEN VALUE: ' + token.Value_Of_Token.__str__() + ' ]'
                     break
             if not match:
                 raise Exception("Illegal characters, Not able to generate tokens")

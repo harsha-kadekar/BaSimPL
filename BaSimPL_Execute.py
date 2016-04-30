@@ -178,7 +178,7 @@ if __name__=='__main__':
     ip = interep.SimpleInterpreter()
     if sys.argv.__len__() > 0:
         for arg in sys.argv:
-            if arg == 'BaSimPL_Execute.py':
+            if arg.lower().__contains__('basimpl_execute.py'):
                 continue
             if arg.__contains__('debug='):
                 split = arg.split('=')
@@ -193,7 +193,7 @@ if __name__=='__main__':
                 intermediateFile = split[1]
                 ip.IntermediateFile = intermediateFile
             else:
-                print 'ERROR:: wrong usage. python BaSimPL_Execute inputfile=filename.smpl debug=1 outputfile=filename.bspl'
+                print 'ERROR:: wrong usage. python BaSimPL_Execute.py inputfile=filename.smpl debug=1 outputfile=filename.bspl'
                 wrongusage = 1
 
     if wrongusage == 0:
