@@ -58,3 +58,75 @@
 
 ######################################################################################################################
 ######################################################################################################################
+import BaSimPL_Compiler as compiler
+import BaSimPL_DummyRuntime as runtime
+import BaSimPL_Parser as parser
+import BaSimPL_Execute as executor
+
+
+class SimpleInterpreter(object):
+    def __init__(self):
+        self._inputFile = ''
+        self._outputFile = ''
+        self._debugMode = 0
+
+    @property
+    def InputFile(self):
+        return self._inputFile
+
+    @InputFile.setter
+    def InputFile(self, value):
+        self._inputFile = value
+
+    @property
+    def IntermediateFile(self):
+        return self._outputFile
+
+    @IntermediateFile.setter
+    def IntermediateFile(self, value):
+        self._outputFile = value
+
+    @property
+    def DebugFlag(self):
+        return self._debugMode
+
+    @DebugFlag.setter
+    def DebugFlag(self, value):
+        self._debugMode = value
+
+    def runTests(self):
+        if self._debugMode == 1:
+            print 'Execute the sample programs with debug mode ON'
+            executor.RunTestWithDebug()
+            print 'Finished execution of sample programs'
+        else:
+            print 'Execute the sample program with debug mode OFF'
+            executor.RunTestWithoutDebug()
+            print 'Finished execution of sample programs'
+
+    def interpret(self):
+        if self._inputFile == '':
+            print 'ERROR:: No input program file is provided. USAGE:: BaSimpPL_Execute inputfile=filename.smpl debug=1 outputfile=bytecodefilename.bspl'
+            return
+        else:
+            outputFile = ''
+            if self._outputFile == '':
+                print 'WARNING:: No intermediate file name provided so default output file name = intermediateFile.bspl will be assumed'
+                outputFile = 'intermediateFile.bspl'
+            else:
+                outputFile = self._outputFile
+
+            if self._debugMode == 1:
+                print 'DEBUG MODE IS ON'
+
+            Basimplcc = compiler.Compiler(self._inputFile)
+            Basimplcc.DebugState = self._debugMode
+            Basimplcc.OutputIntermediateFile = outputFile
+            Basimplcc.generate_intermediate_file()
+            Basimplip = runtime.DummyRunTime(Basimplcc.OutputIntermediateFile)
+            Basimplip.DebugFlag = self._debugMode
+            Basimplip.executecode()
+
+            print 'DONE with the execution... now exiting'
+
+
